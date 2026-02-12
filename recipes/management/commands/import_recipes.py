@@ -28,7 +28,13 @@ class Command(BaseCommand):
                     continue
                 
                 # The CSV has an empty column after Title that contains meal_type
-                meal_type = row.get('', '') or row.get('Meal Type', '')
+                meal_type = (
+			    row.get('Meal_Time')
+    			    or row.get('Meal Type')
+    			    or row.get('')
+    			    or ''
+		           )
+
                 
                 defaults = {
                     'title': row.get('Title', ''),
