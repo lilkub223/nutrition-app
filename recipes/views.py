@@ -99,3 +99,8 @@ def registration_page(request):
         return redirect("login_page")
     all = {**error_info, "diseases": diseases}
     return render(request, 'main/registrationpage.html', all) #pass list for bootstrap
+
+################## Logout #################
+def logout_view(request):
+    logout(request)  
+    return redirect("landing_page")  
