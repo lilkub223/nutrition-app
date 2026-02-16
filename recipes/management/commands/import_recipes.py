@@ -27,7 +27,14 @@ class Command(BaseCommand):
                 if not recipe_id:
                     continue
                 
-                meal_type = row.get('', '') or row.get('Meal Type', '')
+                # The CSV has an empty column after Title that contains meal_type
+                meal_type = (
+			    row.get('Meal_Time')
+    			    or row.get('Meal Type')
+    			    or row.get('')
+    			    or ''
+		           )
+
                 
                 defaults = {
 
