@@ -5,6 +5,7 @@ from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login, logout
 from recipes.models import Disease, AppUser
+from recipes.models import Recipe
 
 def landing_page(request):
     if request.user.is_authenticated:
@@ -113,3 +114,20 @@ def registration_page(request):
 def logout_view(request):
     logout(request)  
     return redirect("landing_page")  
+
+
+
+
+###################search page #################
+def search_page(request):
+    return render(request, 'recipes/searchpage.html')
+
+
+def recipes_list(request):
+    recipes = Recipe.objects.all().order_by('title')
+    return render(request, 'recipes/recipes_list.html', {'recipes': recipes})
+
+def recipe_detail(request, recipe_id):
+    from django.shortcuts import get_object_or_404
+    recipe = get_object_or_404(Recipe, id=recipe_id)
+    return render(request, 'recipes/recipe_detail.html', {'recipe': recipe})
