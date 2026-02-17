@@ -1,20 +1,23 @@
-from django.shortcuts import render
+
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login as auth_login, logout
 from recipes.models import Disease, AppUser
 from recipes.models import Recipe
 
-def landing_page(request):
+
+# Create your views here.
+def home(request):
     if request.user.is_authenticated:
         u_email = request.user.email  
         return redirect("dashboard")
     else: 
-        return render(request, 'recipes/landingpage.html',
+        return render(request, 'main/home.html',
                       {'app_name': 'Eattiligent',
                        'user_email': 'Login'})
+
 
 ################## Login #################
 def login_page(request):
@@ -40,12 +43,16 @@ def login_page(request):
             if user_info is None:
                 error_info["errors"]["login"] = "Invalid email or password"
             else:
-                login(request, user_info)
+                auth_login(request, user_info)
 
                 next_url = request.GET.get("next")
-                return redirect(next_url or "dashboard")
+                return redirect("home")
 
-    return render(request, "recipes/loginpage.html", error_info)
+    return render(request, "main/login.html", error_info)
+################## Logout #################
+def logout_view(request):
+    logout(request)  
+    return redirect("home")  
 
 ################## Register #################
 def registration_page(request):
@@ -108,17 +115,8 @@ def registration_page(request):
             )
         return redirect("login_page")
     all = {**error_info, "diseases": diseases}
-    return render(request, 'recipes/registrationpage.html', all) #pass list for bootstrap
+    return render(request, 'main/register.html', all) #pass list for bootstrap
 
-################## Logout #################
-def logout_view(request):
-    logout(request)  
-    return redirect("landing_page")  
-
-
-
-
-###################search page #################
 def search_page(request):
     return render(request, 'recipes/searchpage.html')
 

@@ -2,13 +2,12 @@ from django.contrib import admin
 from django.urls import path
 from recipes import views
 
-urlpatterns = [
+urlpatterns = [    
     path('admin/', admin.site.urls),
     path('login/', views.login_page, name='login_page'),
     path('register/', views.registration_page, name='registration_page'),
     path('logout/', views.logout_view, name='logout'),
-    path('', views.landing_page, name='landing_page'),
+    path('', views.home, name='home'),
     path('recipes/', views.recipes_list, name='recipes_list'),
     path('recipes/<int:recipe_id>/', views.recipe_detail, name='recipe_detail'),
-
 ]
