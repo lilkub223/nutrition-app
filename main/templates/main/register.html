@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'main/base.html' %}
 
 {% block title %}Register{% endblock %}
 
@@ -9,7 +9,7 @@
             <div class="card-body p-5">
                 <h2 class="text-center mb-4">Register</h2>
                 
-                <form method="POST" action="{% url 'register' %}">
+                <form method="POST" action="{% url 'registration_page' %}">
                     {% csrf_token %}
                     
                     <!-- Username Field -->
@@ -61,7 +61,7 @@
                 
                 <!-- Login Link -->
                 <div class="text-center mt-3">
-                    <p>Already have an account? <a href="{% url 'login' %}">Login here</a></p>
+                    <p>Already have an account? <a href="{% url 'login_page' %}">Login here</a></p>
                 </div>
             </div>
         </div>

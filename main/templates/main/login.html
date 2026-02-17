@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+{% extends 'main/base.html' %}
 
 {% block title %}Login{% endblock %}
 
@@ -9,16 +9,16 @@
             <div class="card-body p-5">
                 <h2 class="text-center mb-4">Login</h2>
                 
-                <form method="POST" action="{% url 'login' %}">
+                <form method="POST" action="{% url 'login_page' %}">
                     {% csrf_token %}
                     
-                    <!-- Username Field -->
+                    <!-- Email (Username) Field -->
                     <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
+                        <label for="email" class="form-label">Email</label>
                         <input type="text" 
                                class="form-control" 
-                               id="username" 
-                               name="username" 
+                               id="email" 
+                               name="email" 
                                required>
                     </div>
                     
@@ -51,7 +51,7 @@
                 
                 <!-- Register Link -->
                 <div class="text-center mt-3">
-                    <p>Don't have an account? <a href="{% url 'register' %}">Register here</a></p>
+                    <p>Don't have an account? <a href="{% url 'registration_page' %}">Register here</a></p>
                 </div>
             </div>
         </div>
