@@ -9,48 +9,58 @@
             <div class="card-body p-5">
                 <h2 class="text-center mb-4">Register</h2>
                 
+                {% if errors %}
+                <div class="alert alert-danger" role="alert">
+                    <ul class="mb-0">
+                    {% for field, error in errors.items %}
+                        <li><strong>{{ field|title }}:</strong> {{ error }}</li>
+                    {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+                
                 <form method="POST" action="{% url 'registration_page' %}">
                     {% csrf_token %}
-                    
-                    <!-- Username Field -->
-                    <div class="mb-3">
-                        <label for="username" class="form-label">Username</label>
-                        <input type="text" 
-                               class="form-control" 
-                               id="username" 
-                               name="username" 
-                               required>
-                    </div>
                     
                     <!-- Email Field -->
                     <div class="mb-3">
                         <label for="email" class="form-label">Email</label>
                         <input type="email" 
-                               class="form-control" 
+                               class="form-control {% if errors.email %}is-invalid{% endif %}" 
                                id="email" 
-                               name="email" 
+                               name="email"
+                               value="{{ email }}"
                                required>
+                        {% if errors.email %}
+                        <div class="invalid-feedback">{{ errors.email }}</div>
+                        {% endif %}
                     </div>
                     
                     <!-- Password Field -->
                     <div class="mb-3">
-                        <label for="password1" class="form-label">Password</label>
+                        <label for="password" class="form-label">Password</label>
                         <input type="password" 
-                               class="form-control" 
-                               id="password1" 
-                               name="password1" 
+                               class="form-control {% if errors.password %}is-invalid{% endif %}" 
+                               id="password" 
+                               name="password" 
                                required>
                         <div class="form-text">Password must be at least 8 characters.</div>
+                        {% if errors.password %}
+                        <div class="invalid-feedback">{{ errors.password }}</div>
+                        {% endif %}
                     </div>
                     
                     <!-- Confirm Password Field -->
                     <div class="mb-3">
-                        <label for="password2" class="form-label">Confirm Password</label>
+                        <label for="confirm_pass" class="form-label">Confirm Password</label>
                         <input type="password" 
-                               class="form-control" 
-                               id="password2" 
-                               name="password2" 
+                               class="form-control {% if errors.confirm_pass %}is-invalid{% endif %}" 
+                               id="confirm_pass" 
+                               name="confirm_pass" 
                                required>
+                        {% if errors.confirm_pass %}
+                        <div class="invalid-feedback">{{ errors.confirm_pass }}</div>
+                        {% endif %}
                     </div>
                     
                     <!-- Submit Button -->

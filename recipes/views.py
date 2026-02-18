@@ -1,10 +1,12 @@
-
+import json
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login as auth_login, logout
-from recipes.models import Disease, AppUser
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from recipes.models import Disease, AppUser, UserPickedRecipes
 from recipes.models import Recipe
 
 
@@ -12,7 +14,7 @@ from recipes.models import Recipe
 def home(request):
     if request.user.is_authenticated:
         u_email = request.user.email  
-        return redirect("dashboard")
+        return redirect("recipes_list")
     else: 
         return render(request, 'main/home.html',
                       {'app_name': 'Eattiligent',
@@ -113,7 +115,7 @@ def registration_page(request):
                 meals_per=meals_per or None,
                 snacks_per=snacks_per or None
             )
-        return redirect("login_page")
+            return redirect("login_page")
     all = {**error_info, "diseases": diseases}
     return render(request, 'main/register.html', all) #pass list for bootstrap
 
@@ -129,3 +131,54 @@ def recipe_detail(request, recipe_id):
     from django.shortcuts import get_object_or_404
     recipe = get_object_or_404(Recipe, id=recipe_id)
     return render(request, 'recipes/recipe_detail.html', {'recipe': recipe})
+
+#saving recipes to the user's picked list
+@csrf_exempt 
+def add_to_picked_recipes(request):
+    if request.method == 'POST':
+        #if user is logged in
+        if not request.user.is_authenticated:
+            return JsonResponse({'success': False, 'error': 'You must be logged in to pick recipes'})
+        
+        try:
+            # Parse the JSON data 
+            data = json.loads(request.body)
+            recipe_title = data.get('recipe_title')
+            
+            # check recipe title
+            if not recipe_title:
+                return JsonResponse({'success': False, 'error': 'Recipe title is required'})
+            
+            # Get or create AppUser for the logged-in user
+            # This links Django's User to your custom AppUser model
+            app_user, created = AppUser.objects.get_or_create(user=request.user)
+            
+            # Get or create UserPickedRecipes for this user
+            # Each user has one UserPickedRecipes record with all their picks
+            user_picks, created = UserPickedRecipes.objects.get_or_create(user=app_user)
+            
+            # Parse the existing recipe list from the TextField
+            # Format is: "Recipe1]Recipe2]Recipe3]"
+            if user_picks.recipe:
+                recipe_list = user_picks.recipe.rstrip("]").split("]")
+                recipe_list = [r for r in recipe_list if r]  # Remove empty strings
+            else:
+                recipe_list = []
+            
+            #  if recipe is already in the user's picks
+            if recipe_title not in recipe_list:
+                # Add  new recipe
+                recipe_list.append(recipe_title)
+                # Save to database with ] delimiter
+                user_picks.recipe = "]".join(recipe_list) + "]"
+                user_picks.save()
+                return JsonResponse({'success': True, 'message': f'Added {recipe_title} to your picks!'})
+            else:
+                return JsonResponse({'success': False, 'error': f'{recipe_title} is already in your picks'})
+                
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON data'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})

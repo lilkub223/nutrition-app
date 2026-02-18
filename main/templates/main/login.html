@@ -9,6 +9,12 @@
             <div class="card-body p-5">
                 <h2 class="text-center mb-4">Login</h2>
                 
+                {% if errors.login %}
+                <div class="alert alert-danger" role="alert">
+                    {{ errors.login }}
+                </div>
+                {% endif %}
+                
                 <form method="POST" action="{% url 'login_page' %}">
                     {% csrf_token %}
                     
@@ -16,20 +22,27 @@
                     <div class="mb-3">
                         <label for="email" class="form-label">Email</label>
                         <input type="text" 
-                               class="form-control" 
+                               class="form-control {% if errors.email %}is-invalid{% endif %}" 
                                id="email" 
                                name="email" 
+                               value="{{ email }}"
                                required>
+                        {% if errors.email %}
+                        <div class="invalid-feedback">{{ errors.email }}</div>
+                        {% endif %}
                     </div>
                     
                     <!-- Password Field -->
                     <div class="mb-3">
                         <label for="password" class="form-label">Password</label>
                         <input type="password" 
-                               class="form-control" 
+                               class="form-control {% if errors.password %}is-invalid{% endif %}" 
                                id="password" 
                                name="password" 
                                required>
+                        {% if errors.password %}
+                        <div class="invalid-feedback">{{ errors.password }}</div>
+                        {% endif %}
                     </div>
                     
                     <!-- Remember Me -->

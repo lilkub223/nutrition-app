@@ -67,8 +67,7 @@
                         <td id="nutrition-value">{{ recipe.carbs_g|default:"N/A" }}</td>
                         <td id="dietary-restriction">{{ recipe.dietary_restrictions|default:"—" }}</td>
                         <td>
-                          <!--  <a href="{% url 'recipe_detail' recipe.id %}" class="view-btn">View</a> -->
-                        </td>
+                            <input type="button" value="add" onclick="addtoUserPickedRecipes('{{ recipe.title|escapejs }}')">                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -83,6 +82,52 @@
     </div>
 
     <script>
+        // Helper function to get CSRF token from cookies
+        // Django stores CSRF token in a cookie that we need to read
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // This function is called when user clicks "add" button
+        function addtoUserPickedRecipes(recipeTitle) {
+            const csrftoken = getCookie('csrftoken');
+            
+            // Send POST request to Django backend
+            fetch('/add_to_picked_recipes/', {
+                method: 'POST',  // POST because we're modifying data
+                headers: {
+                    'Content-Type': 'application/json',  // We're sending JSON
+                    'X-CSRFToken': csrftoken  // Django security token
+                },
+                body: JSON.stringify({ recipe_title: recipeTitle })  // Convert to JSON string
+            })
+            .then(response => response.json())  // Parse response JSON
+            .then(data => {
+                // Show user-friendly message based on success/error
+                if (data.success) {
+                    alert('Recipe added to your picked recipes!');
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                // Handle network errors
+                console.error('Error:', error);
+                alert('An unexpected error occurred.');
+            });
+        }
+
         function filterRecipes() {
             const searchInput = document.getElementById('searchInput').value.toLowerCase();
             const mealTypeFilter = document.getElementById('mealTypeFilter').value.toLowerCase();

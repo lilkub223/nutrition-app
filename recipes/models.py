@@ -68,6 +68,7 @@ class Recipe(models.Model):
 
 	def __str__(self):
 		return f"{self.title} ({self.id})"
+     
 class Disease(models.Model):
     id = models.IntegerField(primary_key=True)
     title = models.CharField(max_length=255)
@@ -105,6 +106,13 @@ class Disease(models.Model):
 
     def __str__(self):
         return f"{self.title} ({self.id})"
+    
+class UserPickedRecipes(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
+    recipe = models.TextField(blank=True, null=True)  
+    def __str__(self):
+        recipe_preview = self.recipe[:50] if self.recipe else "No recipes"
+        return f"{self.user.user.email} - {recipe_preview}"
     
 class Ingredient(models.Model):
     id = models.IntegerField(primary_key=True)
