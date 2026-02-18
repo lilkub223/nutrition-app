@@ -17,7 +17,7 @@
             <section id="search-section">
                 <input type="text" id="searchInput" placeholder=" Search recipes..." onkeyup="filterRecipes()">
             </section>
-            <select id="filter-select" id="mealTypeFilter" onchange="filterRecipes()">
+            <select class="filter-select" id="mealTypeFilter" onchange="filterRecipes()">
                 <option value="">All Meal Types</option>
                 <option value="vegetarian">vegetarian</option>
                 <option value="gluten-free">gluten-free</option>
@@ -157,7 +157,7 @@
             }
 
 
-            document.querySelector('.recipe-count').textContent = `Showing: ${visibleCount} recipes`;
+            document.querySelector('#recipe-count').textContent = `Showing: ${visibleCount} recipes`;
         }
     </script>
 </body>
