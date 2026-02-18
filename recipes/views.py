@@ -3,19 +3,33 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.core.validators import validate_email
 from django.core.exceptions import ValidationError
+<<<<<<< HEAD
 from django.contrib.auth import authenticate, login as auth_login, logout
 from recipes.models import Disease, AppUser
 
 def home(request):
+=======
+from django.contrib.auth import authenticate, login, logout
+from recipes.models import Disease, AppUser
+
+def landing_page(request):
+>>>>>>> dev-rheema-landingpage
     if request.user.is_authenticated:
         u_email = request.user.email  
         return redirect("dashboard")
     else: 
+<<<<<<< HEAD
         return render(request, 'main/home.html',
                       {'app_name': 'Eattiligent',
                        'user_email': 'Login'})
 
 
+=======
+        return render(request, 'main/landingpage.html',
+                      {'app_name': 'Eattiligent',
+                       'user_email': 'Login'})
+
+>>>>>>> dev-rheema-landingpage
 ################## Login #################
 def login_page(request):
     error_info = {"errors": {}, "email": ""}
@@ -40,6 +54,7 @@ def login_page(request):
             if user_info is None:
                 error_info["errors"]["login"] = "Invalid email or password"
             else:
+<<<<<<< HEAD
                 auth_login(request, user_info)
 
                 next_url = request.GET.get("next")
@@ -50,6 +65,14 @@ def login_page(request):
 def logout_view(request):
     logout(request)  
     return redirect("home")  
+=======
+                login(request, user_info)
+
+                next_url = request.GET.get("next")
+                return redirect(next_url or "dashboard")
+
+    return render(request, "main/loginpage.html", error_info)
+>>>>>>> dev-rheema-landingpage
 
 ################## Register #################
 def registration_page(request):
@@ -112,4 +135,13 @@ def registration_page(request):
             )
         return redirect("login_page")
     all = {**error_info, "diseases": diseases}
+<<<<<<< HEAD
     return render(request, 'main/register.html', all) #pass list for bootstrap
+=======
+    return render(request, 'main/registrationpage.html', all) #pass list for bootstrap
+
+################## Logout #################
+def logout_view(request):
+    logout(request)  
+    return redirect("landing_page")  
+>>>>>>> dev-rheema-landingpage
