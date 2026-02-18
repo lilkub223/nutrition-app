@@ -1,4 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Django
+db.sqlite3
+media/
+
+# Environment
+.env
+venv/
+.env.*
+
+# Mac
 .DS_Store
+
+# VSCode
 .vscode/
 .idea/
 /main/__pycache__
