@@ -1,0 +1,25 @@
+{% extends 'main/base.html' %}
+
+{% block title %}Selected Recipes{% endblock %}
+
+{% block content %}
+
+
+<h1>Selected Recipes:</h1>
+
+{% if recipes %}
+<div class="list-group">
+
+    {% for r in recipes %}
+    <a href="recipes/recipe_detail.html" class="list-group-item list-group-item-action">{{ r }}</a>
+    {% endfor %}
+
+</div>
+{% else %}
+    <p>You haven't picked any recipes.</p>
+{% endif %}
+
+<a href="{% url 'recipes_list' %}">Back to recipe selection</a>
+
+
+{% endblock %}

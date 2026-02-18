@@ -182,3 +182,24 @@ def add_to_picked_recipes(request):
             return JsonResponse({'success': False, 'error': str(e)})
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+# Added recipes page
+def selected_recipes(request):
+    try:
+        app_user = AppUser.objects.get(user=request.user)
+        
+        user_picks = UserPickedRecipes.objects.get(user=app_user)
+    
+        if user_picks.recipe:
+            recipe_list = user_picks.recipe.rstrip("]").split("]")
+            recipe_list = [r for r in recipe_list if r]  # Remove empty strings
+        else:
+            recipe_list = []
+
+    except AppUser.DoesNotExist:
+        recipe_list = []
+    except UserPickedRecipes.DoesNotExist:
+        recipe_list = []
+
+    return render(request, 'recipes/selected_recipes.html', {"recipes": recipe_list})
