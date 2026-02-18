@@ -11,7 +11,7 @@ def landing_page(request):
         u_email = request.user.email  
         return redirect("dashboard")
     else: 
-        return render(request, 'recipes/landingpage.html',
+        return render(request, 'main/landingpage.html',
                       {'app_name': 'Eattiligent',
                        'user_email': 'Login'})
 
@@ -44,7 +44,7 @@ def login_page(request):
                 next_url = request.GET.get("next")
                 return redirect(next_url or "dashboard")
 
-    return render(request, "recipes/loginpage.html", error_info)
+    return render(request, "main/loginpage.html", error_info)
 
 ################## Register #################
 def registration_page(request):
@@ -107,7 +107,7 @@ def registration_page(request):
             )
         return redirect("login_page")
     all = {**error_info, "diseases": diseases}
-    return render(request, 'recipes/registrationpage.html', all) #pass list for bootstrap
+    return render(request, 'main/registrationpage.html', all) #pass list for bootstrap
 
 ################## Logout #################
 def logout_view(request):
