@@ -7,10 +7,6 @@ urlpatterns = [
     path('login/', views.login_page, name='login_page'),
     path('register/', views.registration_page, name='registration_page'),
     path('logout/', views.logout_view, name='logout'),
-<<<<<<< HEAD
-    path('', views.home, name='home')
-=======
+    path('home/', views.home, name='home'),
     path('', views.landing_page, name='landing_page'),
-
->>>>>>> dev-rheema-landingpage
 ]
