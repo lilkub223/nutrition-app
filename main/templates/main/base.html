@@ -56,7 +56,10 @@
                             <a class="nav-link" href="#">Recipes</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">Logout</a>
+                            <form action="{% url 'logout' %}" method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="nav-link logout-btn">Logout</button>
+                            </form>
                         </li>
                     {% else %}
                         <li class="nav-item">
