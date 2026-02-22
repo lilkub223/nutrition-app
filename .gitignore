@@ -4,8 +4,12 @@
 
 # Python
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
+*.pyc
+*.pyo
+*.pyd
 
 # Django / local DB
 db.sqlite3
@@ -14,3 +18,26 @@ db.sqlite3
 .venv/
 venv/
 ENV/
+
+# macOS
+.AppleDouble
+.LSOverride
+
+# Environment variables
+.env
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# VSCode workspace files
+*.code-workspace
+
+# Pytest / coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Migration cache
+recipes/migrations/__pycache__/
+nutrition_project/__pycache__/
