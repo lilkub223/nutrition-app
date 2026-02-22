@@ -1,8 +1,6 @@
 from django.core.management.base import BaseCommand
 import csv
 from recipes.models import Disease
-from elasticsearch import Elasticsearch
-from elasticsearch.helpers import bulk
 
 
 def to_float(val):
@@ -10,70 +8,23 @@ def to_float(val):
         return float(val) if val not in (None, '', ' ') else None
     except (ValueError, TypeError):
         return None
+    
+def get_min(row, key):
+    return to_float(row.get(f"{key}_min"))
+
+def get_max(row, key):
+    return to_float(row.get(f"{key}_max"))
 
 
 class Command(BaseCommand):
-    help = "Import diseases from CSV and index to Elasticsearch"
+    help = "Import diseases from CSV"
 
     def add_arguments(self, parser):
         parser.add_argument('csvpath')
 
     def handle(self, *args, **opts):
         path = opts['csvpath']
-        es_host = 'http://elasticsearch:9200'
         count = 0
-
-        # Connect to Elasticsearch
-        try:
-            es = Elasticsearch([es_host], request_timeout=5)
-            if not es.ping():
-                self.stdout.write(self.style.WARNING('Elasticsearch not reachable, skipping indexing'))
-                es = None
-            else:
-                # Create index with mapping if it doesn't exist
-                if not es.indices.exists(index='diseases'):
-                    es.indices.create(index='diseases', body={
-                        'mappings': {
-                            'properties': {
-                                'id': {'type': 'integer'},
-                                'title': {'type': 'text', 'fields': {'keyword': {'type': 'keyword'}}},
-                                'superfood': {'type': 'text'},
-                                'must_avoid': {'type': 'text'},
-                                'recommended_activity_level': {'type': 'keyword'},
-                                'calories_kcal': {'type': 'float'},
-                                'saturated_fat_g': {'type': 'float'},
-                                'carbs_g': {'type': 'float'},
-                                'protein_g': {'type': 'float'},
-                                'fiber_g': {'type': 'float'},
-                                'sugar_g': {'type': 'float'},
-                                'cholesterol_mg': {'type': 'float'},
-                                'sodium_mg': {'type': 'float'},
-                                'potassium_mg': {'type': 'float'},
-                                'iron_mg': {'type': 'float'},
-                                'calcium_mg': {'type': 'float'},
-                                'phosphorus_mg': {'type': 'float'},
-                                'magnesium_mg': {'type': 'float'},
-                                'vitamin_a_ug': {'type': 'float'},
-                                'vitamin_b_mg': {'type': 'float'},
-                                'vitamin_c_mg': {'type': 'float'},
-                                'vitamin_d_ug': {'type': 'float'},
-                                'vitamin_e_mg': {'type': 'float'},
-                                'vitamin_k_ug': {'type': 'float'},
-                                'zinc_mg': {'type': 'float'},
-                                'iodine_ug': {'type': 'float'},
-                                'selenium_ug': {'type': 'float'},
-                                'copper_mg': {'type': 'float'},
-                                'fluoride_mg': {'type': 'float'},
-                                'chromium_mg': {'type': 'float'},
-                            }
-                        }
-                    })
-                    self.stdout.write(self.style.SUCCESS('Created diseases index'))
-        except Exception as e:
-            self.stdout.write(self.style.WARNING(f'Elasticsearch error: {e}. Continuing with DB import only.'))
-            es = None
-
-        es_docs = []
 
         with open(path, newline='', encoding='utf-8') as fh:
             reader = csv.DictReader(fh)
@@ -81,64 +32,85 @@ class Command(BaseCommand):
                 disease_id = int(row.get('ID', 0) or 0)
                 if not disease_id:
                     continue
-
                 defaults = {
-                    'title': row.get('Title', ''),
-                    'superfood': row.get('Superfood', ''),
-                    'must_avoid': row.get('Must_Avoid', ''),
-                    'recommended_activity_level': row.get('Recommended_Activity_Level', ''),
+                    "title": row.get("Name", "").strip(),
 
-                    'calories_kcal': to_float(row.get('Calories_kcal')),
-                    'saturated_fat_g': to_float(row.get('Saturated_Fat_g')),
-                    'carbs_g': to_float(row.get('Carbs_g')),
-                    'protein_g': to_float(row.get('Protein_g')),
-                    'fiber_g': to_float(row.get('Fiber_g')),
-                    'sugar_g': to_float(row.get('Sugar_g')),
-                    'cholesterol_mg': to_float(row.get('Cholesterol_mg')),
-                    'sodium_mg': to_float(row.get('Sodium_mg')),
-                    'potassium_mg': to_float(row.get('Potassium_mg')),
-                    'iron_mg': to_float(row.get('Iron_mg')),
-                    'calcium_mg': to_float(row.get('Calcium_mg')),
-                    'phosphorus_mg': to_float(row.get('Phosphorus_mg')),
-                    'magnesium_mg': to_float(row.get('Magnesium_mg')),
+                    "low_calories_kcal": get_min(row, "Calories_kcal"),
+                    "high_calories_kcal": get_max(row, "Calories_kcal"),
 
-                    'vitamin_a_ug': to_float(row.get('Vitamin_A_ug')),
-                    'vitamin_b_mg': to_float(row.get('Vitamin_B_mg')),
-                    'vitamin_c_mg': to_float(row.get('Vitamin_C_mg')),
-                    'vitamin_d_ug': to_float(row.get('Vitamin_D_ug')),
-                    'vitamin_e_mg': to_float(row.get('Vitamin_E_mg')),
-                    'vitamin_k_ug': to_float(row.get('Vitamin_K_ug')),
+                    "low_saturated_fat_g": get_min(row, "Saturated_Fat_g"),
+                    "high_saturated_fat_g": get_max(row, "Saturated_Fat_g"),
 
-                    'zinc_mg': to_float(row.get('Zinc_mg')),
-                    'iodine_ug': to_float(row.get('Iodine_ug')),
-                    'selenium_ug': to_float(row.get('Selenium_ug')),
-                    'copper_mg': to_float(row.get('Copper_mg')),
-                    'fluoride_mg': to_float(row.get('Fluoride_mg')),
-                    'chromium_mg': to_float(row.get('Chromium_mg')),
+                    "low_carbs_g": get_min(row, "Carbs_g"),
+                    "high_carbs_g": get_max(row, "Carbs_g"),
+
+                    "low_protein_g": get_min(row, "Protein_g"),
+                    "high_protein_g": get_max(row, "Protein_g"),
+
+                    "low_fiber_g": get_min(row, "Fiber_g"),
+                    "high_fiber_g": get_max(row, "Fiber_g"),
+
+                    "low_sugar_g": get_min(row, "Sugar_g"),
+                    "high_sugar_g": get_max(row, "Sugar_g"),
+
+                    "low_cholesterol_mg": get_min(row, "Cholesterol_mg"),
+                    "high_cholesterol_mg": get_max(row, "Cholesterol_mg"),
+
+                    "low_sodium_mg": get_min(row, "Sodium_mg"),
+                    "high_sodium_mg": get_max(row, "Sodium_mg"),
+
+                    "low_potassium_mg": get_min(row, "Potassium_mg"),
+                    "high_potassium_mg": get_max(row, "Potassium_mg"),
+
+                    "low_iron_mg": get_min(row, "Iron_mg"),
+                    "high_iron_mg": get_max(row, "Iron_mg"),
+
+                    "low_calcium_mg": get_min(row, "Calcium_mg"),
+                    "high_calcium_mg": get_max(row, "Calcium_mg"),
+
+                    "low_phosphorus_mg": get_min(row, "Phosphorus_mg"),
+                    "high_phosphorus_mg": get_max(row, "Phosphorus_mg"),
+                    "low_magnesium_mg": get_min(row, "Magnesium_mg"),
+                    "high_magnesium_mg": get_max(row, "Magnesium_mg"),
+
+                    "low_vitamin_a_ug": get_min(row, "Vitamin_A_ug"),
+                    "high_vitamin_a_ug": get_max(row, "Vitamin_A_ug"),
+
+                    "low_vitamin_b_mg": get_min(row, "Vitamin_B_mg"),
+                    "high_vitamin_b_mg": get_max(row, "Vitamin_B_mg"),
+
+                    "low_vitamin_c_mg": get_min(row, "Vitamin_C_mg"),
+                    "high_vitamin_c_mg": to_float(row.get("Vitamin_C_max")),
+
+                    "low_vitamin_d_ug": get_min(row, "Vitamin_D_ug"),
+                    "high_vitamin_d_ug": get_max(row, "Vitamin_D_ug"),
+
+                    "low_vitamin_e_mg": get_min(row, "Vitamin_E_mg"),
+                    "high_vitamin_e_mg": get_max(row, "Vitamin_E_mg"),  
+                    "low_vitamin_k_ug": get_min(row, "Vitamin_K_ug"),
+                    "high_vitamin_k_ug": get_max(row, "Vitamin_K_ug"),
+
+                    "low_zinc_mg": get_min(row, "Zinc_mg"),
+                    "high_zinc_mg": get_max(row, "Zinc_mg"),
+
+                    "low_iodine_ug": get_min(row, "Iodine_ug"),
+                    "high_iodine_ug": get_max(row, "Iodine_ug"),
+                    "low_selenium_ug": get_min(row, "Selenium_ug"),
+                    "high_selenium_ug": get_max(row, "Selenium_ug"),
+
+                    "low_copper_mg": get_min(row, "Copper_mg"),
+                    "highcopper_mg": get_max(row, "Copper_mg"),
+
+                    "low_fluoride_mg": get_min(row, "Fluoride_mg"),
+                    "high_fluoride_mg": get_max(row, "Fluoride_mg"),
+
+                    "low_chromium_mg": get_min(row, "Chromium_mg"),
+                    "high_chromium_mg": get_max(row, "Chromium_mg"),
                 }
 
-                # Save to database
+
                 Disease.objects.update_or_create(id=disease_id, defaults=defaults)
-
-                # Prepare Elasticsearch document
-                if es:
-                    es_doc = {'id': disease_id, **defaults}
-                    es_docs.append({
-                        '_index': 'diseases',
-                        '_id': disease_id,
-                        '_source': es_doc
-                    })
-
                 count += 1
 
-        # Bulk index to Elasticsearch
-        if es and es_docs:
-            try:
-                success, failed = bulk(es, es_docs, stats_only=True)
-                self.stdout.write(self.style.SUCCESS(f'Indexed {success} diseases to Elasticsearch'))
-                if failed:
-                    self.stdout.write(self.style.WARNING(f'{failed} documents failed to index'))
-            except Exception as e:
-                self.stdout.write(self.style.ERROR(f'Elasticsearch bulk indexing error: {e}'))
+        self.stdout.write(self.style.SUCCESS(f"Successfully imported {count} diseases"))
 
-        self.stdout.write(self.style.SUCCESS(f"Successfully imported {count} diseases to database"))

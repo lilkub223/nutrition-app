@@ -1,21 +1,16 @@
+.DS_Store
+.vscode/
+.idea/
+
 # Python
 __pycache__/
 *.py[cod]
-*.sqlite3
+*$py.class
 
-# Django
+# Django / local DB
 db.sqlite3
-media/
 
-# Environment
-.env
+# Virtualenv
+.venv/
 venv/
-.env.*
-
-# Mac
-.DS_Store
-
-# VSCode
-.vscode/
-.idea/
-/main/__pycache__
+ENV/
