@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from recipes.models import Disease, AppUser, UserPickedRecipes
+from recipes.models import Disease, AppUser
 from recipes.models import Recipe
 
 
