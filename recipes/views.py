@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from recipes.models import Disease, AppUser, UserPickedRecipes
+from recipes.models import Disease, AppUser
 from recipes.models import Recipe
 
 
@@ -242,9 +242,23 @@ def disease_page(request):
         return redirect("login_page")
     
     diseases = Disease.objects.prefetch_related(
-        "diseases_super_food_set__ingredient_id",
-        "diseases_avoid_food_set__ingredient_id"
+        "disease_super_food_set__ingredient_id",
+        "disease_avoid_food_set__ingredient_id"
     )
-    return render(request, "main/diseases.html",{
+    return render(request, "main/disease_page.html",{
+        "diseases": diseases
+    })
+
+
+def disease_detail(request, id):
+    if not request.user.is_authenticated:
+        return redirect("login_page")
+    
+    diseases = Disease.objects.prefetch_related(
+        "disease_super_food_set__ingredient_id",
+        "disease_avoid_food_set__ingredient_id"
+    ).filter(id=id).first()
+
+    return render(request, "main/disease_detail.html",{
         "diseases": diseases
     })
