@@ -12,6 +12,7 @@ urlpatterns = [
     path('recipes/<int:recipe_id>/', views.recipe_detail, name='recipe_detail'),
     path('add_to_picked_recipes/', views.add_to_picked_recipes, name='add_to_picked_recipes'),  
     path('selected_recipes/', views.selected_recipes, name='selected_recipes'),
+    path('forgot_pass/', views.forgot_password_page, name='forgot_pass'),
     # New endpoint for AJAX requests
     path('', views.landing_page, name='landing_page'),
 
