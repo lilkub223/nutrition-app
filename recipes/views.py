@@ -14,18 +14,21 @@ from recipes.models import Recipe
 def home(request):
     if not request.user.is_authenticated:
         return redirect("login_page")
+    
+    #diseases = Disease.objects.all()
     return render(request, "main/home.html")
+
 
 def landing_page(request):
     if request.user.is_authenticated:
-        return redirect("landing_page")
+        return redirect("home")
 
     return render(request, 'main/landingpage.html',
                   {'app_name': 'Eattiligent',
                    'user_email': 'Login'})
 
 
-################## Login #################
+# login
 def login_page(request):
     error_info = {"errors": {}, "email": ""}
 
@@ -59,12 +62,12 @@ def login_page(request):
     return render(request, "main/login.html", error_info)
 
 
-################## Logout #################
+# logout
 def logout_view(request):
     logout(request)
     return redirect("landing_page")
 
-################## Register #################
+# registration
 def registration_page(request):
     error_info = {"errors": {}, "email": ""}
     diseases = Disease.objects.all()
@@ -134,17 +137,17 @@ def registration_page(request):
                 print(f"Registration Error: {e}")
                 error_info["errors"]["registration"] = f"Database error: {e}"
 
-            AppUser.objects.create(
-                user = user,
-                bmr = bmr or None,
-                disease=user_disease or None,
-                dietary_restriction=dietary_restriction or None,
-                weight=weight or None,
-                goal_weight=goal_weight or None,
-                allergy=allergy or None,
-                meals_per=meals_per or None,
-                snacks_per=snacks_per or None
-            )
+            # AppUser.objects.create(
+            #     user = user,
+            #     bmr = bmr or None,
+            #     disease=user_disease or None,
+            #     dietary_restriction=dietary_restriction or None,
+            #     weight=weight or None,
+            #     goal_weight=goal_weight or None,
+            #     allergy=allergy or None,
+            #     meals_per=meals_per or None,
+            #     snacks_per=snacks_per or None
+            # )
             return redirect("login_page")
     all = {**error_info, "diseases": diseases}
     return render(request, 'main/register.html', all) #pass list for bootstrap
@@ -233,3 +236,15 @@ def selected_recipes(request):
         recipe_list = []
 
     return render(request, 'recipes/selected_recipes.html', {"recipes": recipe_list})
+
+def disease_page(request):
+    if not request.user.is_authenticated:
+        return redirect("login_page")
+    
+    diseases = Disease.objects.prefetch_related(
+        "diseases_super_food_set__ingredient_id",
+        "diseases_avoid_food_set__ingredient_id"
+    )
+    return render(request, "main/diseases.html",{
+        "diseases": diseases
+    })
