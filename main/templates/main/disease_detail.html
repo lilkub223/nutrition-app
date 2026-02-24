@@ -18,7 +18,7 @@
             <p> { for food in disease.disease_super_food_set.all %}
                     <li>{{ food.ingredient_id.title }}</li>
                 {% empty %}
-                    <li>No recommended foods available.</li>
+                    <li>No Recommended Foods Available.</li>
                 {% endfor %}
             </ul>
 
@@ -27,7 +27,7 @@
                 {% for food in disease.disease_avoid_food_set.all %}
                     <li>{{ food.ingredient_id.title }}</li>
                 {% empty %}
-                    <li>No foods to avoid listed.</li>
+                    <li> No Foods to Avoid Listed</li>
                 {% endfor %}
             </ul>
 
