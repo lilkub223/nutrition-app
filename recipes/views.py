@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from recipes.models import Disease, AppUser
+from recipes.models import Disease, AppUser, Disease_Avoid_Food, Recipe_Ingredients
 from recipes.models import Recipe
 
 
@@ -74,7 +74,6 @@ def registration_page(request):
         password = request.POST.get("password", "")
         confirm_pass = request.POST.get("confirm_pass", "")
 
-        # can be null
         bmr = request.POST.get("bmr", "").strip()
         disease_id = request.POST.get("disease")
         dietary_restriction = request.POST.get("dietary_restriction", "").strip()
@@ -90,7 +89,6 @@ def registration_page(request):
         else:
             try:
                 validate_email(email)
-                # Check for existing user so it doesn't crash later
                 if User.objects.filter(username=email).exists():
                     error_info["errors"]["email"] = "Email already exists"
             except ValidationError:
@@ -101,7 +99,6 @@ def registration_page(request):
         if password != confirm_pass:
             error_info["errors"]["confirm_pass"] = "Passwords do not match"
 
-        # find the disease id in the database
         user_disease = None
         if disease_id and disease_id.isdigit():
             try:
@@ -117,10 +114,9 @@ def registration_page(request):
                     password=password
                 )
 
-                AppUser.objects.create(
+                app_user = AppUser.objects.create(
                     user=user,
                     bmr=float(bmr) if bmr else None,
-                    disease=user_disease or None,
                     dietary_restriction=dietary_restriction or None,
                     weight=float(weight) if weight else None,
                     goal_weight=float(goal_weight) if goal_weight else None,
@@ -128,26 +124,19 @@ def registration_page(request):
                     meals_per=int(meals_per) if meals_per else None,
                     snacks_per=int(snacks_per) if snacks_per else None
                 )
+
+                # M2M must be set AFTER create, NOT inside create()
+                if user_disease:
+                    app_user.diseases.set([user_disease])
+
                 return redirect("login_page")
             except Exception as e:
-                # This helps pinpoint errors in the Docker console
                 print(f"Registration Error: {e}")
                 error_info["errors"]["registration"] = f"Database error: {e}"
 
-            AppUser.objects.create(
-                user = user,
-                bmr = bmr or None,
-                disease=user_disease or None,
-                dietary_restriction=dietary_restriction or None,
-                weight=weight or None,
-                goal_weight=goal_weight or None,
-                allergy=allergy or None,
-                meals_per=meals_per or None,
-                snacks_per=snacks_per or None
-            )
-            return redirect("login_page")
     all = {**error_info, "diseases": diseases}
-    return render(request, 'main/register.html', all) #pass list for bootstrap
+    return render(request, 'main/register.html', all)
+
 
 def search_page(request):
     return render(request, 'recipes/searchpage.html')
@@ -155,8 +144,31 @@ def search_page(request):
 
 def recipes_list(request):
     recipes = Recipe.objects.all().order_by('title')
-    return render(request, 'recipes/recipes_list.html', {'recipes': recipes})
 
+    if request.user.is_authenticated:
+        try:
+            app_user = AppUser.objects.get(user=request.user)
+
+            # Get user's disease IDs
+            user_disease_ids = app_user.diseases.values_list('id', flat=True)
+
+            # Get ingredient IDs to avoid based on user's diseases
+            avoid_ingredient_ids = Disease_Avoid_Food.objects.filter(
+                disease_id__in=user_disease_ids
+            ).values_list('ingredient_id', flat=True)
+
+            # Exclude recipes that contain any avoided ingredients
+            if avoid_ingredient_ids:
+                avoided_recipe_ids = Recipe_Ingredients.objects.filter(
+                    ingredient_id__in=avoid_ingredient_ids
+                ).values_list('recipe_id', flat=True)
+
+                recipes = recipes.exclude(id__in=avoided_recipe_ids)
+
+        except AppUser.DoesNotExist:
+            pass
+
+    return render(request, 'recipes/recipes_list.html', {'recipes': recipes})
 def recipe_detail(request, recipe_id):
     from django.shortcuts import get_object_or_404
     recipe = get_object_or_404(Recipe, id=recipe_id)

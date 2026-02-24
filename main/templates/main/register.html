@@ -68,9 +68,9 @@
                     <div class="mb-3">
                         <label for="disease" class="form-label">Disease / Condition</label>
                         <select class="form-select" id="disease" name="disease">
-                            <option value="">None</option>
+                            <option value="">NoneGiven</option>
                             {% for d in diseases %}
-                                <option value="{{ d.id }}">{{ d.name }}</option>
+                                <option value="{{ d.id }}">{{ d.title}}</option>
                             {% endfor %}
                         </select>
                     </div>

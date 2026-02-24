@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 class AppUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bmr = models.FloatField(blank=True, null=True)
-    disease = models.CharField(max_length=255, blank=True, null=True)
+    diseases = models.ManyToManyField("Disease", blank=True)
     dietary_restriction = models.CharField(max_length=255, blank=True, null=True)
     weight = models.FloatField(blank=True, null=True)
     goal_weight = models.FloatField(blank=True, null=True)
