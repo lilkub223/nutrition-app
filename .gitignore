@@ -40,4 +40,5 @@ htmlcov/
 
 # Migration cache
 recipes/migrations/__pycache__/
+recipes/migrations
 nutrition_project/__pycache__/
