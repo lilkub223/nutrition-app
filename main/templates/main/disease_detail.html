@@ -7,7 +7,7 @@
 <div class="container mt-4">
 
     <a href="{% url 'disease_page' disease.id%}" class="btn btn-secondary mb-3">
-        ← Back to Diseases
+        Back to Diseases
     </a>
 
     <div class="card">
@@ -15,8 +15,7 @@
             <h1 class="mb-4">{{ disease.title }}</h1>
 
             <h3>Recommended Foods</h3>
-            <ul>
-                {% for food in disease.disease_super_food_set.all %}
+            <p> { for food in disease.disease_super_food_set.all %}
                     <li>{{ food.ingredient_id.title }}</li>
                 {% empty %}
                     <li>No recommended foods available.</li>
@@ -44,14 +43,26 @@
                     <p><strong>Fiber:</strong> {{ disease.low_fiber_g }} - {{ disease.high_fiber_g }} g</p>
                     <p><strong>Sugar:</strong> {{ disease.low_sugar_g }} - {{ disease.high_sugar_g }} g</p>
                     <p><strong>Sodium:</strong> {{ disease.low_sodium_mg }} - {{ disease.high_sodium_mg }} mg</p>
+                    <p><strong>Cholesterol:</strong> {{ disease.low_cholesterol_mg }} - {{ disease.high_cholesterol_mg }} mg</p>
+
                 </div>
 
                 <div class="col-md-6">
                     <p><strong>Vitamin A:</strong> {{ disease.low_vitamin_a_ug }} - {{ disease.high_vitamin_a_ug }} ug</p>
+                    <p><strong>Vitamin B:</strong> {{ disease.low_vitamin_b_mg }} - {{ disease.high_vitamin_b_mg }} mg</p>
                     <p><strong>Vitamin C:</strong> {{ disease.low_vitamin_c_mg }} - {{ disease.high_vitamin_c_mg }} mg</p>
                     <p><strong>Vitamin D:</strong> {{ disease.low_vitamin_d_ug }} - {{ disease.high_vitamin_d_ug }} ug</p>
+                    <p><strong>Vitamin E:</strong> {{ disease.low_vitamin_e_mg }} - {{ disease.high_vitamin_e_mg }} mg</p>
+                    <p><strong>Vitamin K:</strong> {{ disease.low_vitamin_k_ug }} - {{ disease.high_vitamin_k_ug }} ug</p>
                     <p><strong>Iron:</strong> {{ disease.low_iron_mg }} - {{ disease.high_iron_mg }} mg</p>
                     <p><strong>Calcium:</strong> {{ disease.low_calcium_mg }} - {{ disease.high_calcium_mg }} mg</p>
+                    <p><strong>Zin:</strong> {{ disease.low_zinc_mg }} - {{ disease.high_zinc_mg }} mg</p>
+                    <p><strong>Iodine:</strong> {{ disease.low_Iodine_ug }} - {{ disease.high_Iodine_ug }} ug</p>
+                    <p><strong>Selenium:</strong> {{ disease.low_selenium_ug }} - {{ disease.high_selenium_ug }} ug</p>
+                    <p><strong>Copper:</strong> {{ disease.low_copper_mg }} - {{ disease.high_copper_mg }} mg</p>
+                    <p><strong>Fluoride:</strong> {{ disease.low_fluoride_mg }} - {{ disease.high_fluoride_mg }} mg</p>
+                    <p><strong>Chromium</strong> {{ disease.low_chromium_mg }} - {{ disease.high_chromium_mg }} mg</p>
+
                 </div>
             </div>
 

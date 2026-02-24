@@ -37,8 +37,8 @@ class Command(BaseCommand):
                             'properties': {
                                 'id': {'type': 'integer'},
                                 'title': {'type': 'text', 'fields': {'keyword': {'type': 'keyword'}}},
-                                #'Diease_Super_Food': {'type': 'text'},
-                                #'Disease_Avoid_Food': {'type': 'text'},
+                                'Diease_Super_Food': {'type': 'text'},
+                                'Disease_Avoid_Food': {'type': 'text'},
                                 #'recommended_activity_level': {'type': 'keyword'},
                                 'low_calories_kcal': {'type': 'float'},
                                 'low_saturated_fat_g': {'type': 'float'},
@@ -110,8 +110,8 @@ class Command(BaseCommand):
 
                 defaults = {
                     'title': row.get('Title', ''),
-                    #'Disease_Super_Food': row.get('Disease_Super_food', ''),
-                    #'Disease_Avoid_Food': row.get('Disease_Avoid_Food', ''),
+                    'Disease_Super_Food': row.get('Disease_Super_food', ''),
+                    'Disease_Avoid_Food': row.get('Disease_Avoid_Food', ''),
                     #'recommended_activity_level': row.get('Recommended_Activity_Level', ''),
 
                     # Low stats for nutrients
