@@ -135,7 +135,7 @@ class Disease(models.Model):
     high_selenium_ug = models.FloatField(blank=True, null=True)
 
     low_copper_mg = models.FloatField(blank=True, null=True)
-    highcopper_mg = models.FloatField(blank=True, null=True)
+    high_copper_mg = models.FloatField(blank=True, null=True)
 
     low_fluoride_mg = models.FloatField(blank=True, null=True)
     high_fluoride_mg = models.FloatField(blank=True, null=True)
@@ -147,7 +147,7 @@ class Disease(models.Model):
         return f"{self.title} ({self.id})"
     
 
-class Ingredient (models.Model):
+class Ingredient(models.Model):
     id = models.IntegerField(primary_key=True)
     title = models.CharField(max_length=255)
     measurements = models.TextField(blank=True, null=True)
@@ -184,18 +184,18 @@ class Ingredient (models.Model):
         return f"{self.title} ({self.id})"
 
 
-class Recipe_Ingredients (models.Model):
+class Recipe_Ingredients(models.Model):
     recipe_id = models.ForeignKey(Recipe, null=True, on_delete=models.CASCADE)
     ingredient_id = models.ForeignKey(Ingredient, null=True, on_delete=models.CASCADE)
     recipe_ingredient_id = models.IntegerField(primary_key=True)
 
 
-class Disease_Super_Food (models.Model):
+class Disease_Super_Food(models.Model):
     disease_id = models.ForeignKey(Disease, null=True, on_delete=models.CASCADE)
     ingredient_id = models.ForeignKey(Ingredient, null=True, on_delete=models.CASCADE)
     disease_ingredient_id = models.IntegerField(primary_key=True)
 
-class Disease_Avoid_Food (models.Model):
+class Disease_Avoid_Food(models.Model):
     disease_id = models.ForeignKey(Disease, null=True, on_delete=models.CASCADE)
     ingredient_id = models.ForeignKey(Ingredient, null=True, on_delete=models.CASCADE)
     disease_ingredient_id = models.IntegerField(primary_key=True)

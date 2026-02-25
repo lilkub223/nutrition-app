@@ -15,18 +15,21 @@ from django.contrib.auth.decorators import login_required
 def home(request):
     if not request.user.is_authenticated:
         return redirect("login_page")
+    
+    #diseases = Disease.objects.all()
     return render(request, "main/home.html")
+
 
 def landing_page(request):
     if request.user.is_authenticated:
-        return redirect("landing_page")
+        return redirect("home")
 
     return render(request, 'main/landingpage.html',
                   {'app_name': 'Eattiligent',
                    'user_email': 'Login'})
 
 
-################## Login #################
+# login
 def login_page(request):
     error_info = {"errors": {}, "email": ""}
 
@@ -60,12 +63,12 @@ def login_page(request):
     return render(request, "main/login.html", error_info)
 
 
-################## Logout #################
+# logout
 def logout_view(request):
     logout(request)
     return redirect("landing_page")
 
-################## Register #################
+# registration
 def registration_page(request):
     error_info = {"errors": {}, "email": ""}
     diseases = Disease.objects.all()
@@ -247,7 +250,31 @@ def selected_recipes(request):
 
     return render(request, 'recipes/selected_recipes.html', {"recipes": recipe_list})
 
+def disease_page(request):
+    if not request.user.is_authenticated:
+        return redirect("login_page")
+    
+    diseases = Disease.objects.prefetch_related(
+        "disease_super_food_set__ingredient_id",
+        "disease_avoid_food_set__ingredient_id"
+    )
+    return render(request, "main/disease_page.html",{
+        "diseases": diseases
+    })
 
+
+def disease_detail(request, id):
+    if not request.user.is_authenticated:
+        return redirect("login_page")
+    
+    diseases = Disease.objects.prefetch_related(
+        "disease_super_food_set__ingredient_id",
+        "disease_avoid_food_set__ingredient_id"
+    ).filter(id=id).first()
+
+    return render(request, "main/disease_detail.html",{
+        "diseases": diseases
+    })
 
 @login_required
 def user_profile(request):
