@@ -8,6 +8,8 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from recipes.models import Disease, AppUser, Disease_Avoid_Food, Recipe_Ingredients
 from recipes.models import Recipe
+from nutrition_project.settings import EMAIL_HOST_USER
+from django.core.mail import send_mail
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 
@@ -249,6 +251,34 @@ def selected_recipes(request):
         recipe_list = []
 
     return render(request, 'recipes/selected_recipes.html', {"recipes": recipe_list})
+
+
+
+
+# Forgot password page
+def forgot_password_page(request):
+    error_info = {"errors": {}, "email": "", "sent": False}
+
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip()
+        error_info["email"] = email
+
+        if not email:
+            error_info["errors"]["email"]= "Email is required"
+        else:
+            try:
+                validate_email(email)
+            except ValidationError:
+                error_info["errors"]["email"] = "Not a valid email address"
+            
+            send_mail(
+                subject= "Eatilligent Forgotten Password",
+                message= "This email is for your forgotten password",
+                from_email=EMAIL_HOST_USER,
+                recipient_list= [email],
+            )          
+            error_info["sent"] = True     
+    return render(request, "main/forgotpass.html", error_info)
 
 
 

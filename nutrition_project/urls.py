@@ -14,6 +14,7 @@ urlpatterns = [
     path('add_to_picked_recipes/', views.add_to_picked_recipes, name='add_to_picked_recipes'),  
     path('selected_recipes/', views.selected_recipes, name='selected_recipes'),
     path('userprofile/', recipe_views.user_profile, name='user_profile'),
+    path('forgot_pass/', views.forgot_password_page, name='forgot_pass'),
     # New endpoint for AJAX requests
     #path('', views.landing_page, name='landing_page'),
     path('diseases/', views.disease_page, name='disease_page'),
