@@ -17,6 +17,6 @@ urlpatterns = [
     # New endpoint for AJAX requests
     #path('', views.landing_page, name='landing_page'),
     path('diseases/', views.disease_page, name='disease_page'),
-    path('diseases/<int:id>/', views.disease_detail, name='disease_detail')
-
+    path('diseases/<int:id>/', views.disease_detail, name='disease_detail'),
+    path('grocery_list/', views.grocery_list, name='grocery_list')
 ]

@@ -199,3 +199,10 @@ class Disease_Avoid_Food(models.Model):
     disease_id = models.ForeignKey(Disease, null=True, on_delete=models.CASCADE)
     ingredient_id = models.ForeignKey(Ingredient, null=True, on_delete=models.CASCADE)
     disease_ingredient_id = models.IntegerField(primary_key=True)
+
+class UserPickedRecipes(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
+    recipe = models.TextField(blank=True, null=True)  
+    def __str__(self):
+        recipe_preview = self.recipe[:50] if self.recipe else "No recipes"
+        return f"{self.user.user.email} - {recipe_preview}"

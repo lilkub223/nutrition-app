@@ -1,0 +1,35 @@
+{% extends 'main/base.html' %}
+
+{% block title %}Grocery List{% endblock %}
+
+{% block content %}
+
+
+<h1>Grocery List:</h1>
+
+{% if recipes %}
+    <div id="table-container">
+        <table id="ingredientsTable">
+            <thead>
+                <tr>
+                    <th>Ingredient</th>
+                    <th>Recipe Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for i, amount in ingredients.items %}
+                    <tr>
+                        <td id="ingredient">{{ i.name }}</td>
+                        <td id="recipe-amount">{{ amount }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <p>You haven't picked any recipes.</p>
+{% endif %}
+<br>
+<a href="{% url 'recipes_list' %}" class="btn btn-success">Back to recipe selection</a>
+
+{% endblock %}
