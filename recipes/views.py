@@ -8,7 +8,8 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from recipes.models import Disease, AppUser, Disease_Avoid_Food, Recipe_Ingredients
 from recipes.models import Recipe
-
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 
 # Create your views here.
 def home(request):
@@ -245,3 +246,24 @@ def selected_recipes(request):
         recipe_list = []
 
     return render(request, 'recipes/selected_recipes.html', {"recipes": recipe_list})
+
+
+
+@login_required
+def user_profile(request):
+    """
+    Display and update user profile
+    """
+    if request.method == 'POST':
+        # Get the current user
+        user = request.user
+        
+        # Update profile fields
+        # Note: You'll need to create a UserProfile model if it doesn't exist
+        # For now, this is a placeholder
+        
+        messages.success(request, 'Profile updated successfully!')
+        return redirect('user_profile')
+    
+    # GET request - just display the profile
+    return render(request, 'recipes/userprofile.html')

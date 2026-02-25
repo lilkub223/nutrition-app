@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from recipes import views
+from recipes import views as recipe_views
 
 urlpatterns = [    
     path('admin/', admin.site.urls),
@@ -12,6 +13,7 @@ urlpatterns = [
     path('recipes/<int:recipe_id>/', views.recipe_detail, name='recipe_detail'),
     path('add_to_picked_recipes/', views.add_to_picked_recipes, name='add_to_picked_recipes'),  
     path('selected_recipes/', views.selected_recipes, name='selected_recipes'),
+    path('userprofile/', recipe_views.user_profile, name='user_profile'),
     # New endpoint for AJAX requests
     path('', views.landing_page, name='landing_page'),
 
