@@ -250,6 +250,23 @@ def selected_recipes(request):
 
     return render(request, 'recipes/selected_recipes.html', {"recipes": recipe_list})
 
+
+
+@login_required
+def user_profile(request):
+    """
+    Display and update user profile
+    """
+    if request.method == 'POST':
+        # Get the current user
+        user = request.user
+        # For now, this is a placeholder
+        
+        messages.success(request, 'Profile updated successfully!')
+        return redirect('user_profile')
+    
+    # GET request - just display the profile
+    return render(request, 'recipes/userprofile.html')
 def disease_page(request):
     if not request.user.is_authenticated:
         return redirect("login_page")
@@ -275,22 +292,3 @@ def disease_detail(request, id):
     return render(request, "main/disease_detail.html",{
         "diseases": diseases
     })
-
-@login_required
-def user_profile(request):
-    """
-    Display and update user profile
-    """
-    if request.method == 'POST':
-        # Get the current user
-        user = request.user
-        
-        # Update profile fields
-        # Note: You'll need to create a UserProfile model if it doesn't exist
-        # For now, this is a placeholder
-        
-        messages.success(request, 'Profile updated successfully!')
-        return redirect('user_profile')
-    
-    # GET request - just display the profile
-    return render(request, 'recipes/userprofile.html')
