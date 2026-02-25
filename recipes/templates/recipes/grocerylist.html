@@ -17,9 +17,9 @@
                 </tr>
             </thead>
             <tbody>
-                {% for i, amount in ingredients.items %}
+                {% for name, amount in ingredients.items %}
                     <tr>
-                        <td id="ingredient">{{ i.name }}</td>
+                        <td id="ingredient">{{ name }}</td>
                         <td id="recipe-amount">{{ amount }}</td>
                     </tr>
                 {% endfor %}
