@@ -1,37 +1,64 @@
 {% extends 'main/base.html' %}
 
-{% block title %}Selected Recipes{% endblock %}
+{% block title %}Diseases{% endblock %}
 
 {% block content %}
+<div id="container">
+    <h1>Diseases</h1>
 
+    <div id="filters">
+        <input type="text" id="searchInput" placeholder="Search diseases..." onkeyup="filterDiseases()">
+        
+        <select id="foodFilter" onchange="filterDiseases()">
+            <option value="">All</option>
+            <option value="has-super-foods">Has Recommended Foods</option>
+            <option value="has-avoid-foods">Has Foods To Avoid</option>
+        </select>
 
-<h1>Diseases</h1>
-
-{% for disease in diseases %}
-<a href="{% url 'disease_page' %}">
-    <div class="card mb-4">
-        <div class="card-body">
-            <h2>{{ disease.title }}</h2>
-
-            <h3>Recommended Foods</h3>
-            <ul>
-                {% for food in disease.disease_super_food_set.all %}
-                <li>{{ food.ingredient_id.title }}</li>
-                {% empty %}
-                <li>No Food Recommendations</li>
-                {% endfor %}
-            </ul>
-
-            <h4>Foods To Avoid</h4>
-            <ul>
-                {% for food in disease.disease_avoid_food_set.all %}
-                <li>{{ food.ingredient_id.title }}</li>
-                {% empty %}
-                <li>No Foods To Avoid</li>
-                {% endfor %}
-            </ul>
-        </div>
+        <span id="disease-count">
+            Total: {{ diseases|length }} diseases
+        </span>
     </div>
-</a>
-{% endfor %}
+
+    <div id="disease-container">
+        {% for disease in diseases %}
+        <div class="disease-card"
+             data-has-super="{% if disease.disease_super_food_set.all %}yes{% else %}no{% endif %}"
+             data-has-avoid="{% if disease.disease_avoid_food_set.all %}yes{% else %}no{% endif %}">
+
+            <a href="{% url 'disease_detail' disease.id %}">
+                <h2 class="disease-title">{{ disease.title }}</h2>
+            </a>
+            <hr>
+        </div>
+        {% empty %}
+            <p>No diseases found.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function filterDiseases() {
+    const searchInput = document.getElementById('searchInput').value.toLowerCase();
+    const filterValue = document.getElementById('foodFilter').value;
+    const cards = document.getElementsByClassName('disease-card');
+    let visibleCount = 0;
+
+    for (let i = 0; i < cards.length; i++) {
+        const card = cards[i];
+        const title = card.querySelector('.disease-title').textContent.toLowerCase();
+        const hasSuper = card.getAttribute('data-has-super');
+        const hasAvoid = card.getAttribute('data-has-avoid');
+        let showCard = true;
+
+        if (searchInput && !title.includes(searchInput)) showCard = false;
+        if (filterValue === "has-super-foods" && hasSuper === "no") showCard = false;
+        if (filterValue === "has-avoid-foods" && hasAvoid === "no") showCard = false;
+
+        card.style.display = showCard ? "" : "none";
+        if (showCard) visibleCount++;
+    }
+    document.getElementById('disease-count').textContent = `Showing: ${visibleCount} diseases`;
+}
+</script>
 {% endblock %}

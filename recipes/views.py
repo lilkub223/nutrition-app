@@ -319,7 +319,7 @@ def disease_detail(request, id):
     diseases = Disease.objects.prefetch_related(
         "disease_super_food_set__ingredient_id",
         "disease_avoid_food_set__ingredient_id"
-    ).filter(id=id).first()
+    ).get(id=id)
 
     return render(request, "main/disease_detail.html",{
         "diseases": diseases

@@ -148,7 +148,7 @@ class Disease(models.Model):
     
 
 class Ingredient(models.Model):
-    id = models.IntegerField(primary_key=True)
+    #id = models.IntegerField(primary_key=True)
     title = models.CharField(max_length=255)
     measurements = models.TextField(blank=True, null=True)
 
@@ -193,11 +193,12 @@ class Recipe_Ingredients(models.Model):
 class Disease_Super_Food(models.Model):
     disease_id = models.ForeignKey(Disease, null=True, on_delete=models.CASCADE)
     ingredient_id = models.ForeignKey(Ingredient, null=True, on_delete=models.CASCADE)
-    disease_ingredient_id = models.IntegerField(primary_key=True)
+    disease_ingredient_id = models.AutoField(primary_key=True)
 
 class Disease_Avoid_Food(models.Model):
     disease_id = models.ForeignKey(Disease, null=True, on_delete=models.CASCADE)
     ingredient_id = models.ForeignKey(Ingredient, null=True, on_delete=models.CASCADE)
+
     disease_ingredient_id = models.IntegerField(primary_key=True)
 
 class UserPickedRecipes(models.Model):
@@ -206,3 +207,5 @@ class UserPickedRecipes(models.Model):
     def __str__(self):
         recipe_preview = self.recipe[:50] if self.recipe else "No recipes"
         return f"{self.user.user.email} - {recipe_preview}"
+
+    disease_ingredient_id = models.AutoField(primary_key=True)
