@@ -85,6 +85,52 @@ class Command(BaseCommand):
                 }
 
                 Disease.objects.update_or_create(id=disease_id, defaults=defaults)
+<<<<<<< HEAD
+=======
+                # disease_obj = Disease.objects.get(id=disease_id)
+
+                # super_foods = row.get('Superfood', '')
+
+                # for food_name in super_foods.split(';'):
+                #     food_name = food_name.strip()
+                #     if food_name:
+                #         ingredient, _ = Ingredient.objects.get_or_create(
+                #             title=food_name
+                #         )
+
+                #         if ingredient:
+                #             Disease_Super_Food.objects.create(
+                #                 disease_id=disease_obj,
+                #                 ingredient_id=ingredient
+                #             )
+
+
+                # avoid_foods = row.get('Must_Avoid', '')
+
+                # for food_name in avoid_foods.split(';'):
+                #     food_name = food_name.strip()
+                #     if food_name:
+                #         ingredient, _ = Ingredient.objects.get_or_create(
+                #             title=food_name
+                #         )
+                #         if ingredient:
+                #             Disease_Avoid_Food.objects.create(
+                #                 disease_id=disease_obj,
+                #                 ingredient_id=ingredient
+                #             )
+
+
+
+                # Prepare Elasticsearch document
+                if es:
+                    es_doc = {'id': disease_id, **defaults}
+                    es_docs.append({
+                        '_index': 'diseases',
+                        '_id': disease_id,
+                        '_source': es_doc
+                    })
+
+>>>>>>> 365d9f0 (commented out import statements)
                 count += 1
 
         self.stdout.write(self.style.SUCCESS(f"Successfully imported {count} diseases"))
