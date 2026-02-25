@@ -314,14 +314,16 @@ def grocery_list(request):
         recipe_list = []
 
     ingredients_amount = {}
+
     
     for r in recipe_list:
         current_recipe = Recipe.objects.get(title=r)
-        for i in Recipe_Ingredients.objects.filter(recipe_id = current_recipe.id):
-            current_ingredient = Ingredient.objects.get(id = i.recipe_id)
-            if current_ingredient.title not in ingredients_amount:
-                ingredients_amount[current_ingredient.title] = 1
-            else:
-                ingredients_amount[current_ingredient.title] += 1
+        for i in Recipe_Ingredients.objects.all():
+            if i.recipe_id == current_recipe:
+                current_ingredient = i.ingredient_id
+                if current_ingredient.title not in ingredients_amount:
+                    ingredients_amount[current_ingredient.title] = 1
+                else:
+                    ingredients_amount[current_ingredient.title] += 1
 
     return render(request, 'recipes/grocerylist.html', {"recipes": recipe_list, "ingredients": ingredients_amount})

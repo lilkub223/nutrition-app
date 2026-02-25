@@ -2,7 +2,18 @@
 
 {% block title %}Grocery List{% endblock %}
 
+
+
 {% block content %}
+
+
+{% block style %}
+    <style>
+        th, td {
+            padding-right: 15em;
+        }
+    </style>
+{% endblock %}
 
 
 <h1>Grocery List:</h1>
@@ -29,7 +40,6 @@
 {% else %}
     <p>You haven't picked any recipes.</p>
 {% endif %}
-<p>{{ ingredients }} {{ recipes }}</p> <!-- For checking what is being passed -->
 <br>
 <a href="{% url 'recipes_list' %}" class="btn btn-success">Back to recipe selection</a>
 
