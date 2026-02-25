@@ -18,8 +18,9 @@
 {% else %}
     <p>You haven't picked any recipes.</p>
 {% endif %}
-
-<a href="{% url 'recipes_list' %}">Back to recipe selection</a>
+<br>
+<a href="{% url 'recipes_list' %}" class="btn btn-success">Back to recipe selection</a>
+<a href="{% url 'grocery_list' %}" class="btn btn-success">Generate Grocery List</a>
 
 
 {% endblock %}

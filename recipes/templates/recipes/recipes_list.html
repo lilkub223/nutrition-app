@@ -14,6 +14,7 @@
             <section id="search-section">
                 <input type="text" id="searchInput" placeholder=" Search recipes..." onkeyup="filterRecipes()">
             </section>
+            
             <select class="filter-select" id="mealTypeFilter" onchange="filterRecipes()">
                 <option value="">All Meal Types</option>
                 <option value="vegetarian">vegetarian</option>
@@ -75,6 +76,8 @@
                 <p>Try importing some recipes using the management command</p>
             </div>
             {% endif %}
+            <br>
+            <a href="{% url 'selected_recipes' %}" class="btn btn-success">View Selected Recipes</a>
         </div>
     </div>
 

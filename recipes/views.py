@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from recipes.models import Disease, AppUser, Disease_Avoid_Food, Recipe_Ingredients
+from recipes.models import Disease, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes
 from recipes.models import Recipe
 from nutrition_project.settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
@@ -68,7 +68,7 @@ def login_page(request):
 # logout
 def logout_view(request):
     logout(request)
-    return redirect("landing_page")
+    return redirect("login_page")
 
 # registration
 def registration_page(request):
@@ -297,6 +297,8 @@ def user_profile(request):
     
     # GET request - just display the profile
     return render(request, 'recipes/userprofile.html')
+
+
 def disease_page(request):
     if not request.user.is_authenticated:
         return redirect("login_page")
@@ -322,3 +324,36 @@ def disease_detail(request, id):
     return render(request, "main/disease_detail.html",{
         "diseases": diseases
     })
+
+
+def grocery_list(request):
+    try:
+        app_user = AppUser.objects.get(user=request.user)
+        
+        user_picks = UserPickedRecipes.objects.get(user=app_user)
+    
+        if user_picks.recipe:
+            recipe_list = user_picks.recipe.rstrip("]").split("]")
+            recipe_list = [r for r in recipe_list if r]  # Remove empty strings
+        else:
+            recipe_list = []
+
+    except AppUser.DoesNotExist:
+        recipe_list = []
+    except UserPickedRecipes.DoesNotExist:
+        recipe_list = []
+
+    ingredients_amount = {}
+
+    
+    for r in recipe_list:
+        current_recipe = Recipe.objects.get(title=r)
+        for i in Recipe_Ingredients.objects.all():
+            if i.recipe_id == current_recipe:
+                current_ingredient = i.ingredient_id
+                if current_ingredient.title not in ingredients_amount:
+                    ingredients_amount[current_ingredient.title] = 1
+                else:
+                    ingredients_amount[current_ingredient.title] += 1
+
+    return render(request, 'recipes/grocerylist.html', {"recipes": recipe_list, "ingredients": ingredients_amount})
