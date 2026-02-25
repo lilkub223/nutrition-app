@@ -29,6 +29,7 @@
 {% else %}
     <p>You haven't picked any recipes.</p>
 {% endif %}
+<p>{{ ingredients }} {{ recipes }}</p> <!-- For checking what is being passed -->
 <br>
 <a href="{% url 'recipes_list' %}" class="btn btn-success">Back to recipe selection</a>
 
