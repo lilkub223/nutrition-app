@@ -1,12 +1,12 @@
 {% extends 'main/base.html' %}
 
-{% block title %}{{ diseases.title }}{% endblock %}
+{% block title %}{{ diseases.id }}{% endblock %}
 
 {% block content %}
 <div>
-    <a href="{% url 'disease_page' %}">Back to Disease List</a>
+    <a href="{% url 'disease_page'%}">Back to Disease List</a>
 
-    <h1>{{ diseases.title }}</h1>
+    <h1>{{ diseases.id }}</h1>
 
     <h3>Recommended Foods</h3>
     <ul>

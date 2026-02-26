@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'main',
-    'recipes.apps.RecipesConfig',
+    'recipes',
 ]
 
 MIDDLEWARE = [
@@ -78,14 +78,15 @@ WSGI_APPLICATION = 'nutrition_project.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default='postgresql://nutritionuser:nutritionpass@localhost:5432/nutritionapp?sslmode=disable',
+        ssl_require=False
+    )
 }
 if os.environ.get('DATABASE_URL'):
     DATABASES['default'] = dj_database_url.config(
-        default=os.environ.get('DATABASE_URL')
+        default=os.environ.get('DATABASE_URL'),
+        ssl_require=False
     )
 
 # Password validation

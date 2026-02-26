@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 
+
 class AppUser(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bmr = models.FloatField(blank=True, null=True)
@@ -148,7 +149,7 @@ class Disease(models.Model):
     
 
 class Ingredient(models.Model):
-    #id = models.IntegerField(primary_key=True)
+    #id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=255)
     measurements = models.TextField(blank=True, null=True)
 
@@ -199,7 +200,7 @@ class Disease_Avoid_Food(models.Model):
     disease_id = models.ForeignKey(Disease, null=True, on_delete=models.CASCADE)
     ingredient_id = models.ForeignKey(Ingredient, null=True, on_delete=models.CASCADE)
 
-    disease_ingredient_id = models.IntegerField(primary_key=True)
+    disease_ingredient_id = models.AutoField(primary_key=True)
 
 class UserPickedRecipes(models.Model):
     user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
