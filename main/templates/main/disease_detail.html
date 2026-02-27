@@ -1,12 +1,12 @@
 {% extends 'main/base.html' %}
 
-{% block title %}{{ diseases.id }}{% endblock %}
+{% block title %}{{ diseases.title }}{% endblock %}
 
 {% block content %}
 <div>
     <a href="{% url 'disease_page'%}">Back to Disease List</a>
 
-    <h1>{{ diseases.id }}</h1>
+    <h1>{{ diseases.title }}</h1>
 
     <h3>Recommended Foods</h3>
     <ul>
@@ -50,4 +50,57 @@
     <p><strong>Fluoride:</strong> {{ diseases.low_fluoride_mg }} - {{ diseases.high_fluoride_mg }} mg</p>
     <p><strong>Chromium:</strong> {{ diseases.low_chromium_mg }} - {{ diseases.high_chromium_mg }} mg</p>
 </div>
+<input type="button" value="add" onclick="addtoUserAddedDisease('{{disease.title|escapejs}}')">
+
+<br><br>
+    <a href="{% url 'selected_disease' %}" class="btn btn-success">View Selected Disease</a>
+
+<script>
+        // Helper function to get CSRF token from cookies, took from recipe-list to ensure correct format
+        // Django stores CSRF token in a cookie that we need to read
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // This function is called when user clicks "add" button
+        function addtoUserPickedDisease(diseaseTitle) {
+            const csrftoken = getCookie('csrftoken');
+            
+            // Send POST request to Django backend
+            fetch('/add_to_picked_disease/', {
+                method: 'POST',  // POST because we're modifying data
+                headers: {
+                    'Content-Type': 'application/json',  // We're sending JSON
+                    'X-CSRFToken': csrftoken  // Django security token
+                },
+                body: JSON.stringify({ disease_title: diseaseTitle })  // Convert to JSON string
+            })
+            .then(response => response.json())  // Parse response JSON
+            .then(data => {
+                // Show user-friendly message based on success/error
+                if (data.success) {
+                    alert('Disease added to user profile!');
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                // Handle network errors
+                console.error('Error:', error);
+                alert('An unexpected error occurred.');
+            });
+        }
+ </script>
+
 {% endblock %}

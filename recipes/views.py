@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from recipes.models import Disease, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes
+from recipes.models import Disease, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes, UserPickedDisease
 from recipes.models import Recipe
 from nutrition_project.settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
@@ -357,3 +357,77 @@ def grocery_list(request):
                     ingredients_amount[current_ingredient.title] += 1
 
     return render(request, 'recipes/grocerylist.html', {"recipes": recipe_list, "ingredients": ingredients_amount})
+
+# took the format for saving recipes to the user's picked list to create it for diseases with the same functionality
+@csrf_exempt 
+def add_to_picked_disease(request):
+    if request.method == 'POST':
+        #if user is logged in
+        if not request.user.is_authenticated:
+            return JsonResponse({'success': False, 'error': 'You must be logged in to pick a disease'})
+        
+        try:
+            # Parse the JSON data 
+            data = json.loads(request.body)
+            disease_title = data.get('disease_title')
+            
+            # check recipe title
+            if not disease_title:
+                return JsonResponse({'success': False, 'error': 'Disease title is required'})
+            
+            # Get or create AppUser for the logged-in user
+            # This links Django's User to your custom AppUser model
+            app_user, created = AppUser.objects.get_or_create(user=request.user)
+            
+            # Get or create UserPickedDisease for this user
+            # Each user has one UserPickedDisease record with all their picks
+            user_picks, created = UserPickedDisease.objects.get_or_create(user=app_user)
+            
+            # Parse the existing recipe list from the TextField
+            # Format is: "Recipe1]Recipe2]Recipe3]"
+            if user_picks.disease:
+                disease_list = user_picks.disease.rstrip("]").split("]")
+                disease_list = [d for d in disease_list if d]  # Remove empty strings
+            else:
+                disease_list = []
+            
+            #  if disease is already in the user's picks
+            if disease_title not in disease_list:
+                # Add  new disease
+                disease_list.append(disease_title)
+                # Save to database with ] delimiter
+                user_picks.disease = "]".join(disease_list) + "]"
+                user_picks.save()
+                return JsonResponse({'success': True, 'message': f'Added {disease_title} to your profile!'})
+            else:
+                return JsonResponse({'success': False, 'error': f'{disease_title} is already in your profile'})
+                
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'error': 'Invalid JSON data'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
+# Added disease page
+def selected_disease(request):
+    try:
+        app_user = AppUser.objects.get(user=request.user)
+        
+        user_picks = UserPickedDisease.objects.get(user=app_user)
+    
+        if user_picks.recipe:
+            disease_list = user_picks.disease.rstrip("]").split("]")
+            disease_list = [d for d in disease_list if d]  # Remove empty strings
+        else:
+            disease_list = []
+
+    except AppUser.DoesNotExist:
+        disease_list = []
+    except UserPickedDisease.DoesNotExist:
+        disease_list = []
+
+    return render(request, 'main/selected_disease.html', {"disease": disease_list})
+
+

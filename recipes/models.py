@@ -210,3 +210,12 @@ class UserPickedRecipes(models.Model):
         return f"{self.user.user.email} - {recipe_preview}"
 
     disease_ingredient_id = models.AutoField(primary_key=True)
+
+class UserPickedDisease(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
+    disease = models.TextField(blank=True, null=True)  
+    def __str__(self):
+        disease_preview = self.disease[:50] if self.disease else "No disease"
+        return f"{self.user.user.email} - {disease_preview}"
+
+    disease_ingredient_id = models.AutoField(primary_key=True)
