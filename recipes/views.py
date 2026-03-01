@@ -6,12 +6,13 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from recipes.models import Disease, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes, UserPickedDisease
+from recipes.models import Disease, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes, UserPickedDisease, Disease_Super_Food
 from recipes.models import Recipe
 from nutrition_project.settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
 
 # Create your views here.
 def home(request):
@@ -156,7 +157,13 @@ def recipes_list(request):
             app_user = AppUser.objects.get(user=request.user)
 
             # Get user's disease IDs
-            user_disease_ids = app_user.diseases.values_list('id', flat=True)
+            try:
+                user_picks = UserPickedDisease.objects.get(user=app_user)
+                picked_disease = [d for d in user_picks.disease.rstrip("]").split("]") if d]
+                #user_disease_ids = app_user.diseases.values_list('id', flat=True)
+                user_disease_ids = Disease.objects.filter(title__in=picked_disease).values_list('id', flat=True)
+            except UserPickedDisease.DoesNotExist:
+                user_disease_ids = []
 
             # Get ingredient IDs to avoid based on user's diseases
             avoid_ingredient_ids = Disease_Avoid_Food.objects.filter(
@@ -170,13 +177,23 @@ def recipes_list(request):
                 ).values_list('recipe_id', flat=True)
 
                 recipes = recipes.exclude(id__in=avoided_recipe_ids)
+            
+            super_ingredients_ids = Disease_Super_Food.objects.filter(
+                disease_id__in=user_disease_ids
+            ).values_list('ingredient_id', flat=True)
+
+            if super_ingredients_ids:
+                super_ingredients_ids = Recipe_Ingredients.objects.filter(
+                ingredient_id__in=user_disease_ids
+            ).values_list('recipe_id', flat=True)
+
 
         except AppUser.DoesNotExist:
             pass
 
     return render(request, 'recipes/recipes_list.html', {'recipes': recipes})
 def recipe_detail(request, recipe_id):
-    from django.shortcuts import get_object_or_404
+    #from django.shortcuts import get_object_or_404
     recipe = get_object_or_404(Recipe, id=recipe_id)
     return render(request, 'recipes/recipe_detail.html', {'recipe': recipe})
 
@@ -417,11 +434,12 @@ def selected_disease(request):
         
         user_picks = UserPickedDisease.objects.get(user=app_user)
     
-        if user_picks.recipe:
+        if user_picks.disease:
             disease_list = user_picks.disease.rstrip("]").split("]")
             disease_list = [d for d in disease_list if d]  # Remove empty strings
+            disease_list = Disease.objects.filter(title__in=disease_list)
         else:
-            disease_list = []
+            disease_list= []
 
     except AppUser.DoesNotExist:
         disease_list = []

@@ -11,7 +11,7 @@
     <h3>Recommended Foods</h3>
     <ul>
         {% for food in diseases.disease_super_food_set.all %}
-            <li>{{ food.ingredient_id.title }}</li>
+            <li>{{ food.ingredient_id }}</li>
         {% empty %}
             <li>No Recommended Foods Available.</li>
         {% endfor %}
@@ -20,7 +20,7 @@
     <h3>Foods To Avoid</h3>
     <ul>
         {% for food in diseases.disease_avoid_food_set.all %}
-            <li>{{ food.ingredient_id.title }}</li>
+            <li>{{ food.ingredient_id }}</li>
         {% empty %}
             <li>No Foods to Avoid Listed</li>
         {% endfor %}
@@ -50,7 +50,7 @@
     <p><strong>Fluoride:</strong> {{ diseases.low_fluoride_mg }} - {{ diseases.high_fluoride_mg }} mg</p>
     <p><strong>Chromium:</strong> {{ diseases.low_chromium_mg }} - {{ diseases.high_chromium_mg }} mg</p>
 </div>
-<input type="button" value="add" onclick="addtoUserAddedDisease('{{disease.title|escapejs}}')">
+<input type="button" value="add" onclick="addtoUserPickedDisease('{{diseases.title|escapejs}}')">
 
 <br><br>
     <a href="{% url 'selected_disease' %}" class="btn btn-success">View Selected Disease</a>
