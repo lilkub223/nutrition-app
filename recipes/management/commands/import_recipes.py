@@ -23,7 +23,7 @@ class Command(BaseCommand):
         with open(path, newline='', encoding='utf-8') as fh:
             reader = csv.DictReader(fh)
             for row in reader:
-                recipe_id = int(row.get('ID', 0))
+                recipe_id = int(row.get("ID", 0) or 0)
                 if not recipe_id:
                     continue
                 

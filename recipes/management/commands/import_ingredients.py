@@ -29,13 +29,17 @@ class Command(BaseCommand):
                 if not ingredient_id:
                     continue
 
+                amount = (row.get("Amount") or "").strip()
+                unit = (row.get("Type_of_Measurement") or "").strip()
+                measurement_value = f"{amount} {unit}".strip() if (amount or unit) else None
+
                 defaults = {
                    
                     "title": (row.get("Name") or "").strip(),
 
-                    
-                    "measurements": (row.get("Type of serving measurement for one") or "").strip(),
+                    "measurements": measurement_value,
 
+                    
                     "calories_kcal": to_float(row.get("Calories_kcal")),
                     "saturated_fat_g": to_float(row.get("Saturated_Fat_g")),
                     "carbs_g": to_float(row.get("Carbs_g")),
@@ -44,21 +48,21 @@ class Command(BaseCommand):
                     "sugar_g": to_float(row.get("Sugar_g")),
 
                    
-                    "cholesterol_mg": to_float(row.get("Cholesterol")),
-                    "sodium_mg": to_float(row.get("Sodium")),
-                    "potassium_mg": to_float(row.get("Potassium")),
+                    "cholesterol_mg": to_float(row.get("cholesterol_mg")),
+                    "sodium_mg": to_float(row.get("sodium_mg")),
+                    "potassium_mg": to_float(row.get("potassium_mg")),
 
                     "iron_mg": to_float(row.get("Iron_mg")),
                     "calcium_mg": to_float(row.get("Calcium_mg")),
                     "phosphorus_mg": to_float(row.get("Phosphorus_mg")),
 
                     
-                    "magnesium_mg": to_float(row.get("Magnesium")),
+                    "magnesium_mg": to_float(row.get("magnesium_mg")),
 
                     "vitamin_a_ug": to_float(row.get("Vitamin_A_ug")),
 
                     
-                    "vitamin_b_mg": to_float(row.get("Vitamin_B")),
+                    "vitamin_b_mg": to_float(row.get("vitamin_b_mg")),
 
                     "vitamin_c_mg": to_float(row.get("Vitamin_C_mg")),
                     "vitamin_d_ug": to_float(row.get("Vitamin_D_ug")),
