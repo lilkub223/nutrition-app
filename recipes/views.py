@@ -73,24 +73,23 @@ def logout_view(request):
 
 # registration
 def registration_page(request):
-    error_info = {"errors": {}, "email": ""}
+    form_data = {
+        "email": "", "weight": "", "goal_weight": "", "bmr" : "", "dietary_restriction": "", 
+        "allergy": "", "meals_per": "", "snacks_per": ""
+    }
+    error_info = {"errors": {}}
+    #error_info = {"errors": {}, "email": ""}
     diseases = Disease.objects.all()
 
     if request.method == "POST":
-        email = request.POST.get("email", "").strip().lower()
+        for fields in form_data.keys():
+            form_data[fields] = request.POST.get(fields, "").strip()
+
+        email = form_data["email"].lower()
         password = request.POST.get("password", "")
         confirm_pass = request.POST.get("confirm_pass", "")
-
-        bmr = request.POST.get("bmr", "").strip()
         disease_id = request.POST.get("disease")
-        dietary_restriction = request.POST.get("dietary_restriction", "").strip()
-        weight = request.POST.get("weight", "").strip()
-        goal_weight = request.POST.get("goal_weight", "").strip()
-        allergy = request.POST.get("allergy", "").strip()
-        meals_per = request.POST.get("meals_per", "").strip()
-        snacks_per = request.POST.get("snacks_per", "").strip()
 
-        error_info["email"] = email
         if not email:
             error_info["errors"]["email"] = "Email is required"
         else:
@@ -105,42 +104,50 @@ def registration_page(request):
             error_info["errors"]["password"] = "Password is required"
         if password != confirm_pass:
             error_info["errors"]["confirm_pass"] = "Passwords do not match"
-
-        user_disease = None
-        if disease_id and disease_id.isdigit():
-            try:
-                user_disease = Disease.objects.get(id=disease_id)
-            except Disease.DoesNotExist:
-                error_info["errors"]["disease"] = "Selected disease is not valid"
-
+            
         if not error_info["errors"]:
             try:
-                user = User.objects.create_user(
-                    username=email,
-                    email=email,
-                    password=password
-                )
-
+                user = User.objects.create_user(username=email, email=email, password=password)
                 app_user = AppUser.objects.create(
                     user=user,
-                    bmr=float(bmr) if bmr else None,
-                    dietary_restriction=dietary_restriction or None,
-                    weight=float(weight) if weight else None,
-                    goal_weight=float(goal_weight) if goal_weight else None,
-                    allergy=allergy or None,
-                    meals_per=int(meals_per) if meals_per else None,
-                    snacks_per=int(snacks_per) if snacks_per else None
-                )
-
-                # M2M must be set AFTER create, NOT inside create()
-                if user_disease:
-                    app_user.diseases.set([user_disease])
+                    bmr=float(form_data["bmr"]) if form_data["bmr"] else None,
+                    dietary_restriction=form_data["dietary_restriction"] or None,
+                    weight=float(form_data["weight"]) if form_data["weight"] else None,
+                    goal_weight=float(form_data["goal_weight"]) if form_data["goal_weight"] else None,
+                    allergy=form_data["allergy"] or None,
+                    meals_per=int(form_data["meals_per"]) if form_data["meals_per"] else None,
+                    snacks_per=int(form_data["snacks_per"]) if form_data["snacks_per"] else None
+                
+                ) #user_disease = None
+                if disease_id and disease_id.isdigit():
+                    try:
+                        user_disease = Disease.objects.get(id=disease_id)
+                        UserPickedDisease.objects.create(user=app_user, disease=f"{user_disease.title}]")
+                        app_user.diseases.set([user_disease])
+                    except Disease.DoesNotExist:
+                        error_info["errors"]["disease"] = "Selected disease is not valid"
 
                 return redirect("login_page")
             except Exception as e:
                 print(f"Registration Error: {e}")
                 error_info["errors"]["registration"] = f"Database error: {e}"
 
+        
+                # disease_name = ""
+                # if user_disease:
+                #     disease_name = f"{user_disease.title}]"
+                
+                # UserPickedDisease.objects.get_or_create(
+                #     user=app_user,
+                #     defaults={'disease': disease_name}
+                # )
+
+                # M2M must be set AFTER create, NOT inside create()
+                # if user_disease:
+                #     app_user.diseases.set([user_disease])
+
+                # return redirect("login_page")
+            
     all = {**error_info, "diseases": diseases}
     return render(request, 'main/register.html', all)
 
@@ -301,20 +308,51 @@ def forgot_password_page(request):
 
 @login_required
 def user_profile(request):
-    """
-    Display and update user profile
-    """
-    if request.method == 'POST':
-        # Get the current user
-        user = request.user
-        # For now, this is a placeholder
-        
-        messages.success(request, 'Profile updated successfully!')
-        return redirect('user_profile')
-    
-    # GET request - just display the profile
-    return render(request, 'recipes/userprofile.html')
+    app_user = get_object_or_404(AppUser, user=request.user)
+    all_diseases = Disease.objects.all().order_by('title')
+    user_picks, created = UserPickedDisease.objects.get_or_create(user=app_user)
 
+    if request.method == 'POST':
+        # Capture the new selection from the dropdown for diseases
+        new_disease_title = request.POST.get('disease')
+        
+        # Current disease user input
+        current_badge_titles = request.POST.getlist('active_diseases')
+
+        # Combines added disease and old diseasinto a single list
+        updated_title_list = list(set(current_badge_titles))
+        if new_disease_title and new_disease_title not in updated_title_list:
+            updated_title_list.append(new_disease_title)
+
+        disease_objects = Disease.objects.filter(title__in=updated_title_list)
+        app_user.diseases.set(disease_objects)
+
+        final_titles = [d.title for d in disease_objects]
+        user_picks.disease = "]".join(final_titles) + "]" if final_titles else ""
+
+        # Saves user info
+        app_user.weight = request.POST.get('weight') or app_user.weight
+        app_user.height = request.POST.get('height') or app_user.height
+        app_user.age = request.POST.get('age') or app_user.age
+        app_user.gender = request.POST.get('gender')
+        app_user.activity_level = request.POST.get('activity_level')
+
+        restrictions_list = request.POST.getlist('dietary_restrictions')
+        app_user.dietary_restriction = ", ".join(restrictions_list)
+        
+        app_user.save()
+        user_picks.save()
+        
+        return redirect('user_profile')
+
+    # Parses through disease list
+    picked_diseases = [d for d in user_picks.disease.rstrip("]").split("]") if d]
+
+    return render(request, 'recipes/userprofile.html', {
+        'app_user': app_user,
+        'all_diseases': all_diseases,
+        'picked_diseases': picked_diseases,
+    })
 
 def disease_page(request):
     if not request.user.is_authenticated:

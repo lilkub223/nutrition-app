@@ -58,19 +58,19 @@
                     <!-- Weight -->
                     <div class="mb-3">
                         <label for="weight" class="form-label">Weight (kg)</label>
-                        <input type="number" class="form-control" id="weight" name="weight" value="{{ user.profile.weight|default:'' }}" placeholder="Enter your weight">
+                        <input type="number" class="form-control" id="weight" name="weight" value="{{ app_user.weight|default:'' }}" placeholder="Enter your weight">
                     </div>
 
                     <!-- Height -->
                     <div class="mb-3">
                         <label for="height" class="form-label">Height (cm)</label>
-                        <input type="number" class="form-control" id="height" name="height" value="{{ user.profile.height|default:'' }}" placeholder="Enter your height">
+                        <input type="number" class="form-control" id="height" name="height" value="{{ app_user.height|default:'' }}" placeholder="Enter your height">
                     </div>
 
                     <!-- Age -->
                     <div class="mb-3">
                         <label for="age" class="form-label">Age</label>
-                        <input type="number" class="form-control" id="age" name="age" value="{{ user.profile.age|default:'' }}" placeholder="Enter your age">
+                        <input type="number" class="form-control" id="age" name="age" value="{{ app_user.age|default:'' }}" placeholder="Enter your age">
                     </div>
 
                     <!-- Gender -->
@@ -78,23 +78,50 @@
                         <label for="gender" class="form-label">Gender</label>
                         <select class="form-select" id="gender" name="gender">
                             <option value="">Select gender</option>
-                            <option value="male" {% if user.profile.gender == 'male' %}selected{% endif %}>Male</option>
-                            <option value="female" {% if user.profile.gender == 'female' %}selected{% endif %}>Female</option>
-                            <option value="other" {% if user.profile.gender == 'other' %}selected{% endif %}>Other</option>
+                            <option value="male" {% if app_user.profile.gender == 'male' %}selected{% endif %}>Male</option>
+                            <option value="female" {% if app_user.profile.gender == 'female' %}selected{% endif %}>Female</option>
+                            <option value="other" {% if app_user.profile.gender == 'other' %}selected{% endif %}>Other</option>
                         </select>
                     </div>
 
                     <!-- Disease Selection -->
                     <div class="mb-3">
                         <label for="disease" class="form-label">Health Condition</label>
-                        <select class="form-select" id="disease" name="disease">
-                            <option value="">Select condition</option>
-                            <option value="diabetes" {% if user.profile.disease == 'diabetes' %}selected{% endif %}>Diabetes</option>
+                        <select class="form-select" id="disease" name="disease" >
+                            <option value="" selected disabled>Select condition</option>
+                            {% for d in all_diseases %}
+                                <option value="{{ d.title }}">
+                                    {{d.title}}
+                                </option>
+                            {% endfor %}
+                            <!-- <option value="diabetes" {% if user.profile.disease == 'diabetes' %}selected{% endif %}>Diabetes</option>
                             <option value="hypertension" {% if user.profile.disease == 'hypertension' %}selected{% endif %}>Hypertension</option>
                             <option value="heart_disease" {% if user.profile.disease == 'heart_disease' %}selected{% endif %}>Heart Disease</option>
                             <option value="celiac" {% if user.profile.disease == 'celiac' %}selected{% endif %}>Celiac Disease</option>
-                            <option value="none" {% if user.profile.disease == 'none' %}selected{% endif %}>None</option>
-                        </select>
+                            <option value="none" {% if user.profile.disease == 'none' %}selected{% endif %}>None</option>-->
+                        </select> 
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label"> Active Disease Filters For Recipes:</label>
+                        <div class="d-flex flex-wrap gap-2"> 
+                            {% if picked_diseases %}
+                                {% for disease in picked_diseases %}
+                                    <span class="badge bg-success p-2">
+                                        <i class="fas fa-check-circle me-1">
+                                        </i>
+                                        {{ disease }}
+                                        <input type="hidden" name="active_diseases" value="{{ disease }}">
+                                        <button type="button" class="btn-close btn-close-white ms-2"
+                                                style="font-size: 0.5rem;" onclick="this.parentElement.remove();">
+                                        </button>
+                                    </span>
+                                {% endfor %}
+                            {% else %}
+                                <span class="text-muted d-block"> No Active Conditions Listed</span>
+                            {% endif %}
+                        </div>
+
                     </div>
 
                     <!-- Dietary Restrictions -->

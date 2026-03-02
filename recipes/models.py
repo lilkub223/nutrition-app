@@ -8,10 +8,14 @@ class AppUser(models.Model):
     diseases = models.ManyToManyField("Disease", blank=True)
     dietary_restriction = models.CharField(max_length=255, blank=True, null=True)
     weight = models.FloatField(blank=True, null=True)
+    height = models.FloatField(blank=True, null=True)
+    gender = models.CharField(max_length=10, null=True, blank= True)
+    age = models.IntegerField(null=True, blank=True)
     goal_weight = models.FloatField(blank=True, null=True)
     allergy = models.CharField(max_length=255, blank=True, null=True)
     meals_per = models.IntegerField(blank=True, null=True)
     snacks_per = models.IntegerField(blank=True, null=True)
+    activity_level = models.CharField(max_length=50, blank=True, null=True)
 
 
 class Recipe(models.Model):
