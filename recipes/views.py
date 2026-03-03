@@ -12,6 +12,12 @@ from nutrition_project.settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.views.decorators.http import require_http_methods
+from datetime import date
+import json
+from recipes.models import DailyLog, MealEntry, WorkoutEntry
 
 # Create your views here.
 def home(request):
@@ -357,3 +363,149 @@ def grocery_list(request):
                     ingredients_amount[current_ingredient.title] += 1
 
     return render(request, 'recipes/grocerylist.html', {"recipes": recipe_list, "ingredients": ingredients_amount})
+
+@login_required
+def daily_digest(request):
+    """
+    Display the daily nutrition digest page
+    """
+    return render(request, 'recipes/daily_digest.html')
+
+
+
+@login_required
+def daily_digest(request):
+    """
+    Display the daily nutrition digest page
+    """
+    return render(request, 'recipes/daily_digest.html')
+
+
+@login_required
+@require_http_methods(["GET"])
+def get_daily_data(request):
+    """
+    API endpoint to get today's daily log data
+    """
+    today = date.today()
+    
+    # Get or create today's log
+    daily_log, created = DailyLog.objects.get_or_create(
+        user=request.user,
+        date=today,
+        defaults={'calorie_goal': 2000}
+    )
+    
+    # Get all meals for today
+    meals = list(daily_log.meals.values(
+        'id', 'meal_name', 'calories', 'protein', 'carbs', 'fats', 'logged_at'
+    ))
+    
+    # Get all workouts for today
+    workouts = list(daily_log.workouts.values(
+        'id', 'workout_type', 'calories_burned', 'logged_at'
+    ))
+    
+    return JsonResponse({
+        'success': True,
+        'date': str(today),
+        'total_calories': daily_log.total_calories,
+        'total_protein': daily_log.total_protein,
+        'total_carbs': daily_log.total_carbs,
+        'total_fats': daily_log.total_fats,
+        'total_burned': daily_log.total_burned,
+        'calorie_goal': daily_log.calorie_goal,
+        'net_calories': daily_log.net_calories,
+        'remaining_calories': daily_log.remaining_calories,
+        'meals': meals,
+        'workouts': workouts,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def add_meal(request):
+    """
+    API endpoint to add a meal entry
+    """
+    try:
+        data = json.loads(request.body)
+        today = date.today()
+        
+        # Get or create today's log
+        daily_log, created = DailyLog.objects.get_or_create(
+            user=request.user,
+            date=today,
+            defaults={'calorie_goal': 2000}
+        )
+        
+        # Create meal entry
+        meal = MealEntry.objects.create(
+            daily_log=daily_log,
+            meal_name=data.get('meal_name', 'Meal'),
+            calories=float(data.get('calories', 0)),
+            protein=float(data.get('protein', 0)),
+            carbs=float(data.get('carbs', 0)),
+            fats=float(data.get('fats', 0)),
+        )
+        
+        # Update daily totals
+        daily_log.total_calories += meal.calories
+        daily_log.total_protein += meal.protein
+        daily_log.total_carbs += meal.carbs
+        daily_log.total_fats += meal.fats
+        daily_log.save()
+        
+        return JsonResponse({
+            'success': True,
+            'meal_id': meal.id,
+            'total_calories': daily_log.total_calories,
+            'total_protein': daily_log.total_protein,
+            'total_carbs': daily_log.total_carbs,
+            'total_fats': daily_log.total_fats,
+            'net_calories': daily_log.net_calories,
+            'remaining_calories': daily_log.remaining_calories,
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["POST"])
+def add_workout(request):
+    """
+    API endpoint to add a workout entry
+    """
+    try:
+        data = json.loads(request.body)
+        today = date.today()
+        
+        # Get or create today's log
+        daily_log, created = DailyLog.objects.get_or_create(
+            user=request.user,
+            date=today,
+            defaults={'calorie_goal': 2000}
+        )
+        
+        # Create workout entry
+        workout = WorkoutEntry.objects.create(
+            daily_log=daily_log,
+            workout_type=data.get('workout_type', 'other'),
+            calories_burned=float(data.get('calories_burned', 0)),
+        )
+        
+        # Update daily totals
+        daily_log.total_burned += workout.calories_burned
+        daily_log.save()
+        
+        return JsonResponse({
+            'success': True,
+            'workout_id': workout.id,
+            'total_burned': daily_log.total_burned,
+            'net_calories': daily_log.net_calories,
+            'remaining_calories': daily_log.remaining_calories,
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
