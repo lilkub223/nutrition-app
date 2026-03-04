@@ -21,5 +21,6 @@ urlpatterns = [
     path('diseases/<int:id>/', views.disease_detail, name='disease_detail'),
     path('grocery_list/', views.grocery_list, name='grocery_list'),
     path('selected_disease/', views.selected_disease, name='selected_disease'),
-    path('add_to_picked_disease/', views.add_to_picked_disease, name='add_to_picked_disease')
+    path('add_to_picked_disease/', views.add_to_picked_disease, name='add_to_picked_disease'),
+    path('weekly_digest/', views.weekly_digest, name='weekly_digest'),
 ]

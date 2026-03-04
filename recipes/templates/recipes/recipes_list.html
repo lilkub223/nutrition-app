@@ -38,7 +38,7 @@
         </div>
 
         <div id="table-container">
-            {% if recipes %}
+            {% if recipes_with_nutrition %}
             <table id="recipesTable">
                 <thead>
                     <tr>
@@ -52,20 +52,21 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for recipe in recipes %}
-                    <tr data-meal-type="{{ recipe.dietary_restrictions|default:"—"|lower    }}">
+                    {% for recipe, nutrition in recipes_with_nutrition %}
+                    <tr data-meal-type="{{ recipe.dietary_restrictions|default:"—"|lower }}">
                         <td id="recipe-title">{{ recipe.title }}</td>
                         <td>
                             <span id="meal-type-badge meal-type-{{ recipe.meal_type|lower|default:'snack' }}">
                                 {{ recipe.meal_type|default:"Snack" }}
                             </span>
                         </td>
-                        <td id="nutrition-value">{{ recipe.calories_kcal|default:"N/A" }}</td>
-                        <td id="nutrition-value">{{ recipe.protein_g|default:"N/A" }}</td>
-                        <td id="nutrition-value">{{ recipe.carbs_g|default:"N/A" }}</td>
+                        <td id="nutrition-value">{{ nutrition.calories }}</td>
+                        <td id="nutrition-value">{{ nutrition.protein }}</td>
+                        <td id="nutrition-value">{{ nutrition.carbs }}</td>
                         <td id="dietary-restriction">{{ recipe.dietary_restrictions|default:"—" }}</td>
                         <td>
-                            <input type="button" value="add" onclick="addtoUserPickedRecipes('{{ recipe.title|escapejs }}')">                        </td>
+                            <input type="button" value="add" onclick="addtoUserPickedRecipes('{{ recipe.title|escapejs }}')">
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

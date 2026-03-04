@@ -1,4 +1,5 @@
 import json
+import random
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.core.validators import validate_email
@@ -6,6 +7,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+import recipes
 from recipes.models import Disease, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes, UserPickedDisease, Disease_Super_Food
 from recipes.models import Recipe
 from nutrition_project.settings import EMAIL_HOST_USER
@@ -157,48 +159,51 @@ def search_page(request):
 
 
 def recipes_list(request):
-    recipes = Recipe.objects.all().order_by('title')
+    recipes = list(Recipe.objects.all().order_by('title'))
 
     if request.user.is_authenticated:
         try:
             app_user = AppUser.objects.get(user=request.user)
 
-            # Get user's disease IDs
             try:
                 user_picks = UserPickedDisease.objects.get(user=app_user)
                 picked_disease = [d for d in user_picks.disease.rstrip("]").split("]") if d]
-                #user_disease_ids = app_user.diseases.values_list('id', flat=True)
                 user_disease_ids = Disease.objects.filter(title__in=picked_disease).values_list('id', flat=True)
             except UserPickedDisease.DoesNotExist:
                 user_disease_ids = []
 
-            # Get ingredient IDs to avoid based on user's diseases
             avoid_ingredient_ids = Disease_Avoid_Food.objects.filter(
                 disease_id__in=user_disease_ids
             ).values_list('ingredient_id', flat=True)
 
-            # Exclude recipes that contain any avoided ingredients
             if avoid_ingredient_ids:
                 avoided_recipe_ids = Recipe_Ingredients.objects.filter(
                     ingredient_id__in=avoid_ingredient_ids
                 ).values_list('recipe_id', flat=True)
-
-                recipes = recipes.exclude(id__in=avoided_recipe_ids)
-            
-            super_ingredients_ids = Disease_Super_Food.objects.filter(
-                disease_id__in=user_disease_ids
-            ).values_list('ingredient_id', flat=True)
-
-            if super_ingredients_ids:
-                super_ingredients_ids = Recipe_Ingredients.objects.filter(
-                ingredient_id__in=user_disease_ids
-            ).values_list('recipe_id', flat=True)
-
+                recipes = list(Recipe.objects.all().order_by('title').exclude(id__in=avoided_recipe_ids))
 
         except AppUser.DoesNotExist:
             pass
 
-    return render(request, 'recipes/recipes_list.html', {'recipes': recipes})
+    # Build nutrition list — always runs, same size/order as recipes
+    nutrition_list = []
+    for recipe in recipes:
+        recipe_ingredients = Recipe_Ingredients.objects.filter(recipe_id=recipe).select_related('ingredient_id')
+        total_calories = sum(ri.ingredient_id.calories_kcal or 0 for ri in recipe_ingredients)
+        total_protein = sum(ri.ingredient_id.protein_g or 0 for ri in recipe_ingredients)
+        total_carbs = sum(ri.ingredient_id.carbs_g or 0 for ri in recipe_ingredients)
+        nutrition_list.append({
+            'calories': round(total_calories, 1) if total_calories else 'N/A',
+            'protein': round(total_protein, 1) if total_protein else 'N/A',
+            'carbs': round(total_carbs, 1) if total_carbs else 'N/A',
+        })
+ 
+    return render(request, 'recipes/recipes_list.html', {
+        'recipes': recipes,
+        'recipes_with_nutrition': list(zip(recipes, nutrition_list)),
+    })
+
+
 def recipe_detail(request, recipe_id):
     #from django.shortcuts import get_object_or_404
     recipe = get_object_or_404(Recipe, id=recipe_id)
@@ -486,4 +491,84 @@ def selected_disease(request):
 
     return render(request, 'main/selected_disease.html', {"disease": disease_list})
 
+def weekly_digest(request):
+    if not request.user.is_authenticated:
+        return redirect("login_page")
+    
+    if request.user.is_authenticated:
+        try:
+            app_user = AppUser.objects.get(user=request.user)
+
+            try:
+                user_picks = UserPickedDisease.objects.get(user=app_user)
+                picked_disease = [d for d in user_picks.disease.rstrip("]").split("]") if d]
+                user_disease_ids = Disease.objects.filter(title__in=picked_disease).values_list('id', flat=True)
+            except UserPickedDisease.DoesNotExist:
+                user_disease_ids = []
+
+            avoid_ingredient_ids = Disease_Avoid_Food.objects.filter(
+                disease_id__in=user_disease_ids
+            ).values_list('ingredient_id', flat=True)
+
+            if avoid_ingredient_ids:
+                avoided_recipe_ids = Recipe_Ingredients.objects.filter(
+                    ingredient_id__in=avoid_ingredient_ids
+                ).values_list('recipe_id', flat=True)
+                recipes = list(Recipe.objects.all().order_by('title').exclude(id__in=avoided_recipe_ids))
+
+        except AppUser.DoesNotExist:
+            pass
+    my_recipies = Recipe.objects.filter(id__in=UserPickedRecipes.objects.filter(user=app_user).values_list('recipe', flat=True))
+
+    # Build nutrition list — always runs, same size/order as recipes
+    nutrition_list = []
+    highest_cal = 0
+    lowest_cal = float('inf')
+    highest_cal_recipe = None
+    lowest_cal_recipe = None
+    for recipe in recipes:
+        recipe_ingredients = Recipe_Ingredients.objects.filter(recipe_id=recipe).select_related('ingredient_id')
+        total_calories = sum(ri.ingredient_id.calories_kcal or 0 for ri in recipe_ingredients)
+        total_protein = sum(ri.ingredient_id.protein_g or 0 for ri in recipe_ingredients)
+        total_carbs = sum(ri.ingredient_id.carbs_g or 0 for ri in recipe_ingredients)
+        nutrition_list.append({
+            'calories': round(total_calories, 1) if total_calories else 'N/A',
+            'protein': round(total_protein, 1) if total_protein else 'N/A',
+            'carbs': round(total_carbs, 1) if total_carbs else 'N/A',
+        })
+        if total_calories > highest_cal:
+            highest_cal = total_calories
+            highest_cal_recipe = recipe
+        if total_calories < lowest_cal:
+            lowest_cal = total_calories
+            lowest_cal_recipe = recipe
+        
+    not_Chosen= Recipe.objects.all().exclude(title__in=[r for r in recipes])
+    random_recipe = random.choice(not_Chosen) if not_Chosen else None
+
+
+    ingredient_count = {}
+    for recipe in recipes:
+        recipe_ingredients = Recipe_Ingredients.objects.filter(recipe_id=recipe).select_related('ingredient_id')
+        for ri in recipe_ingredients:
+            ingredient_title = ri.ingredient_id.title
+            if ingredient_title not in ingredient_count:
+                ingredient_count[ingredient_title] = 1
+            else:
+                ingredient_count[ingredient_title] += 1
+
+    # Get most common ingredient
+    most_common_ingredient = max(ingredient_count, key=ingredient_count.get) if ingredient_count else None
+
+
+    return render(request, 'recipes/weekly_digest.html', {
+        'recipes': recipes,
+        'recipes_with_nutrition': list(zip(recipes, nutrition_list)),
+        'most_common_ingredient': most_common_ingredient,
+        'highest_cal_recipe': highest_cal_recipe,
+        'not_Chosen': random_recipe,
+        'lowest_cal_recipe': lowest_cal_recipe,
+        'highest_cal': round(highest_cal, 1),
+        'lowest_cal': round(lowest_cal, 1),
+    })
 

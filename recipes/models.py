@@ -181,7 +181,7 @@ class Ingredient(models.Model):
     iodine_ug = models.FloatField(blank=True, null=True)
     selenium_ug = models.FloatField(blank=True, null=True)
     copper_mg = models.FloatField(blank=True, null=True)
-    magnesium_2_mg = models.FloatField(blank=True, null=True)
+    #magnesium_2_mg = models.FloatField(blank=True, null=True)
     fluoride_mg = models.FloatField(blank=True, null=True)
     chromium_mg = models.FloatField(blank=True, null=True)
 
