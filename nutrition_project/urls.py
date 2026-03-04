@@ -19,8 +19,12 @@ urlpatterns = [
     #path('', views.landing_page, name='landing_page'),
     path('diseases/', views.disease_page, name='disease_page'),
     path('diseases/<int:id>/', views.disease_detail, name='disease_detail'),
-    path('grocery_list/', views.grocery_list, name='grocery_list'),
-    path('selected_disease/', views.selected_disease, name='selected_disease'),
-    path('add_to_picked_disease/', views.add_to_picked_disease, name='add_to_picked_disease'),
+    path('grocery_list/', views.grocery_list, name='grocery_list')
+    path('daily/', views.daily_digest, name='daily_digest'),
+    path('daily/', views.daily_digest, name='daily_digest'),
+    path('api/daily/data/', views.get_daily_data, name='get_daily_data'),
+    path('api/daily/add-meal/', views.add_meal, name='add_meal'),
+    path('api/daily/add-workout/', views.add_workout, name='add_workout'),
     path('weekly_digest/', views.weekly_digest, name='weekly_digest'),
+
 ]
