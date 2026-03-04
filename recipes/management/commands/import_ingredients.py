@@ -31,13 +31,15 @@ class Command(BaseCommand):
 
                 amount = (row.get("Amount") or "").strip()
                 unit = (row.get("Type_of_Measurement") or "").strip()
-                measurement_value = f"{amount} {unit}".strip() if (amount or unit) else None
+                #measurement_value = f"{amount} {unit}".strip() if (amount or unit) else None
 
                 defaults = {
                    
                     "title": (row.get("Name") or "").strip(),
 
-                    "measurements": measurement_value,
+                    "measurement": unit,
+
+                    "measurement_amount": amount,
 
                     
                     "calories_kcal": to_float(row.get("Calories_kcal")),

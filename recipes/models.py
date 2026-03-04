@@ -155,7 +155,8 @@ class Disease(models.Model):
 class Ingredient(models.Model):
     id = models.IntegerField(primary_key=True)
     title = models.CharField(max_length=255)
-    measurements = models.TextField(blank=True, null=True)
+    measurement = models.TextField(blank=True, null=True)
+    measurement_amount = models.FloatField(blank=True, null=True)
 
     calories_kcal = models.FloatField(blank=True, null=True)
     saturated_fat_g = models.FloatField(blank=True, null=True)

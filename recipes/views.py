@@ -400,7 +400,7 @@ def grocery_list(request):
 
     ingredients_amount = {}
 
-    
+    recipe_list = set(recipe_list)
     for r in recipe_list:
         current_recipe = Recipe.objects.get(title=r)
         for i in Recipe_Ingredients.objects.all():
@@ -486,4 +486,56 @@ def selected_disease(request):
 
     return render(request, 'main/selected_disease.html', {"disease": disease_list})
 
+def custom_user_recipe(request):
+    error_info = {"errors": {}}
 
+    if request.method == "POST":
+        title = request.POST.get('title')
+        mealType = request.POST.getlist('type')
+        ingredientList = request.POST.getlist('ingredient-selection')
+        amountsList = request.POST.getlist('ingredient-amount')
+        instructions = request.POST.get('instructions')
+
+        if not title:
+            error_info["errors"]["title"] = "Error"
+        
+        if not mealType:
+            error_info["errors"]["type"] = "Error"
+
+        if not ingredientList:
+            error_info["errors"]["ingredients"] = "Error"
+
+        if not amountsList:
+            error_info["errors"]["amounts"] = "Error"
+
+        if not instructions:
+            error_info["errors"]["instructions"] = "Error"
+
+        if not error_info["errors"]:
+            newId = 1
+            while newId in Recipe.objects.values_list("id", flat=True):
+                newId += 1
+
+            mealType = "; ".join(mealType)
+            ingredientListString = ";".join(ingredientList)
+
+            Recipe.objects.create(
+                id = newId,
+                title = title,
+                meal_type = mealType,
+                ingredients = ingredientListString,
+                how_to_cook = instructions
+            )
+
+            for i in range(len(ingredientList)):
+                current_ingredient_id = Ingredient.objects.get(title=ingredientList[i]).id
+                Recipe_Ingredients.objects.create(
+                    recipe_id = Recipe.objects.get(id=newId),
+                    ingredient_id = Ingredient.objects.get(id=current_ingredient_id),
+                    amount = amountsList[i]
+                )
+            
+            return redirect('recipes_list')
+
+    ingredients = Ingredient.objects.all()
+    return render(request, 'recipes/customrecipe.html', {'ingredients':ingredients, "errors":error_info["errors"]})
