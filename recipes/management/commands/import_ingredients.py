@@ -37,7 +37,7 @@ class Command(BaseCommand):
                    
                     "title": (row.get("Name") or "").strip(),
 
-                    "measurement": unit,
+                    "measurements": unit,
 
                     "measurement_amount": amount,
 
