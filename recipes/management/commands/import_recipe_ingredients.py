@@ -17,18 +17,22 @@ class Command(BaseCommand):
             reader = csv.DictReader(fh)
 
             for row in reader:
-                pk = int(row.get("id", 0) or 0)
                 recipe_id = int(row.get("recipe_id", 0) or 0)
                 ingredient_id = int(row.get("ingredient_id", 0) or 0)
 
-                if not pk or not recipe_id or not ingredient_id:
+                try:
+                    amount=float(row.get("Amount")) if row.get("Amount") else None
+                except (ValueError, TypeError):
+                    amount=None
+
+                if not recipe_id or not ingredient_id:
                     continue
 
                 Recipe_Ingredients.objects.update_or_create(
-                    recipe_ingredient_id=pk,
+                    recipe_id_id=recipe_id,
+                    ingredient_id_id=ingredient_id,
                     defaults={
-                        "recipe_id_id": recipe_id,
-                        "ingredient_id_id": ingredient_id,
+                        "amount": amount,
                     }
                 )
 

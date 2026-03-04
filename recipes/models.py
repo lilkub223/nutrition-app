@@ -155,9 +155,10 @@ class Disease(models.Model):
     
 
 class Ingredient(models.Model):
-    #id = models.AutoField(primary_key=True)
+    id = models.IntegerField(primary_key=True)
     title = models.CharField(max_length=255)
-    measurements = models.TextField(blank=True, null=True)
+    measurement = models.TextField(blank=True, null=True)
+    measurement_amount = models.FloatField(blank=True, null=True)
 
     calories_kcal = models.FloatField(blank=True, null=True)
     saturated_fat_g = models.FloatField(blank=True, null=True)
@@ -179,6 +180,7 @@ class Ingredient(models.Model):
     vitamin_d_ug = models.FloatField(blank=True, null=True)
     vitamin_e_mg = models.FloatField(blank=True, null=True)
     vitamin_k_ug = models.FloatField(blank=True, null=True)
+
     zinc_mg = models.FloatField(blank=True, null=True)
     iodine_ug = models.FloatField(blank=True, null=True)
     selenium_ug = models.FloatField(blank=True, null=True)
@@ -194,7 +196,13 @@ class Ingredient(models.Model):
 class Recipe_Ingredients(models.Model):
     recipe_id = models.ForeignKey(Recipe, null=True, on_delete=models.CASCADE)
     ingredient_id = models.ForeignKey(Ingredient, null=True, on_delete=models.CASCADE)
-    recipe_ingredient_id = models.IntegerField(primary_key=True)
+    amount=models.FloatField(blank=True,null=True)
+    recipe_ingredient_id = models.AutoField(primary_key=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["recipe_id", "ingredient_id"], name="uniq_recipe_ingredient")
+        ]
 
 
 class Disease_Super_Food(models.Model):
@@ -202,11 +210,20 @@ class Disease_Super_Food(models.Model):
     ingredient_id = models.ForeignKey(Ingredient, null=True, on_delete=models.CASCADE)
     disease_ingredient_id = models.AutoField(primary_key=True)
 
+    class Meta:
+         constraints = [
+              models.UniqueConstraint(fields=["disease_id", "ingredient_id"], name="uniq_disease_superfood")
+         ]
+
 class Disease_Avoid_Food(models.Model):
     disease_id = models.ForeignKey(Disease, null=True, on_delete=models.CASCADE)
     ingredient_id = models.ForeignKey(Ingredient, null=True, on_delete=models.CASCADE)
-
     disease_ingredient_id = models.AutoField(primary_key=True)
+    
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["disease_id", "ingredient_id"], name="uniq_disease_avoidfood")
+        ]
 
 class UserPickedRecipes(models.Model):
     user = models.ForeignKey(AppUser, on_delete=models.CASCADE)

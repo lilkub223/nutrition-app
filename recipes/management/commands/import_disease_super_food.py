@@ -17,19 +17,15 @@ class Command(BaseCommand):
             reader = csv.DictReader(fh)
 
             for row in reader:
-                pk = int(row.get("disease_ingredient_id", 0) or 0)
                 disease_id = int(row.get("disease_id", 0) or 0)
                 ingredient_id = int(row.get("ingredient_id", 0) or 0)
 
-                if not pk or not disease_id or not ingredient_id:
+                if not disease_id or not ingredient_id:
                     continue
 
                 Disease_Super_Food.objects.update_or_create(
-                    disease_ingredient_id=pk,
-                    defaults={
-                        "disease_id_id": disease_id,
-                        "ingredient_id_id": ingredient_id,
-                    }
+                    disease_id_id=disease_id,
+                    ingredient_id_id=ingredient_id,
                 )
 
                 count += 1

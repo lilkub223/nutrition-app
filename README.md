@@ -6,11 +6,14 @@ docker-compose exec web python manage.py import_recipes "data/raw/recipes.csv"
 to import dieseases
 docker-compose exec web python manage.py import_diseases "data/raw/diseases.csv"
 
-to import ingredients(5 parts)
-docker-compose exec web python manage.py import_ingredients "data/raw/food_nutrition_part1.csv"
+import ingredients 
+docker-compose exec web python manage.py import_ingredients "data/raw/ingredients.csv"
 
-.
-.
-docker-compose exec web python manage.py import_ingredients "food_nutrition_part5.csv"
+import avoid foods
+docker-compose exec web python manage.py import_disease_avoid_food "data/raw/disease_avoid_food.csv"
 
-// get all recipies
+import super foods
+docker-compose exec web python manage.py import_disease_super_food "data/raw/disease_super_food.csv"
+
+import recipe ingredients table
+docker-compose exec web python manage.py import_recipe_ingredients "data/raw/recipe_ingredients.csv"
