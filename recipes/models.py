@@ -66,6 +66,9 @@ class Recipe(models.Model):
 class Disease(models.Model):
     id = models.IntegerField(primary_key=True)
     title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    related_diseases = models.TextField(blank=True, null=True)
+    
     # superfood = models.CharField(max_length=255, blank=True, null=True)
     # must_avoid = models.TextField(blank=True, null=True)
     # recommended_activity_level = models.CharField(max_length=255, blank=True, null=True)

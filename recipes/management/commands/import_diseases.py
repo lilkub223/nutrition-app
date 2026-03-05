@@ -28,6 +28,8 @@ class Command(BaseCommand):
                     continue
                 defaults = {
                     'title': row.get('Title', ''),
+                    'description': row.get('Description', ''),
+                    'related_diseases': row.get('related_diseases', ''),
 
                     # Low stats
                     'low_calories_kcal': to_float(row.get('low_calories_kcal')),
