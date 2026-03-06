@@ -14,7 +14,7 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            background-color: #f8f9fa;
+            background-color: #f6efdf;
         }
         
         main {
@@ -22,7 +22,7 @@
         }
         
         .navbar {
-            background-color: #2c3e50;
+            background-color: #caa22c;
         }
         
         .navbar-brand {
@@ -47,7 +47,8 @@
         
         .nav-link {
             color: rgba(255,255,255,0.9) !important;
-            font-weight: 500;
+            font-weight: 700;
+            font-size: 0.9rem;
             transition: all 0.3s;
             padding: 0.5rem 1rem !important;
         }
@@ -86,18 +87,27 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     {% if user.is_authenticated %}
+
+                        <li class="nav-item">
+                            <a class="nav-link" href="/daily/">Daily Digest</a>
+                        </li>
+                        <li class = "nav-item">
+                            <a class="nav-link" href="/weekly_digest/">Weekly Digest</a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link" href="/recipes/">Recipes</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/daily/">Daily Digest</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/userprofile/">Profile</a>
+                            <a class="nav-link" href="/selected_recipes/">Selected Recipes</a>
                         </li>
                         <li class = "nav-item">
-                            <a class="nav-link" href="/weekly_digest/">Weekly Digest</a>
-
+                            <a class="nav-link" href="/custom_recipe/">Create Recipe</a>
+                        </li>
+                        <li class = "nav-item">
+                            <a class="nav-link" href="/grocery_list/">Grocery List</a>
+                        </li>                         
+                        <li class="nav-item">
+                            <a class="nav-link" href="/userprofile/">Profile</a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link" href="{% url 'logout' %}">Logout</a>
