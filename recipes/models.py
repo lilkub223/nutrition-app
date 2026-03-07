@@ -68,6 +68,9 @@ class Recipe(models.Model):
 class Disease(models.Model):
     id = models.IntegerField(primary_key=True)
     title = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    related_diseases = models.TextField(blank=True, null=True)
+    
     # superfood = models.CharField(max_length=255, blank=True, null=True)
     # must_avoid = models.TextField(blank=True, null=True)
     # recommended_activity_level = models.CharField(max_length=255, blank=True, null=True)
@@ -404,3 +407,30 @@ class UserPickedDisease(models.Model):
         return f"{self.user.user.email} - {disease_preview}"
 
     disease_ingredient_id = models.AutoField(primary_key=True)
+
+class Quote(models.Model):
+     id = models.IntegerField(primary_key=True)
+     quote = models.TextField()
+     def __str__(self):
+          return self.quote[:50]  # returns the first 50 characters of the quote for display purposes
+     
+class DietaryRestriction(models.Model):
+     id=models.IntegerField(primary_key=True)
+     title=models.CharField(max_length=255)
+
+     def __str__(self):
+            return self.title
+     
+class Dietary_Restriction_Ingredient(models.Model):
+     dietary_restriction=models.ForeignKey(DietaryRestriction, null=True, on_delete=models.CASCADE)
+     ingredient=models.ForeignKey(Ingredient, null=True, on_delete=models.CASCADE)
+
+     def __str__(self):
+          return f"{self.dietary_restriction.title} - {self.ingredient.title}"
+     
+class Dietary_Restriction_Recipe(models.Model):
+        dietary_restriction=models.ForeignKey(DietaryRestriction, null=True, on_delete=models.CASCADE)
+        recipe=models.ForeignKey(Recipe, null=True, on_delete=models.CASCADE)
+    
+        def __str__(self):
+            return f"{self.dietary_restriction.title} - {self.recipe.title}"
