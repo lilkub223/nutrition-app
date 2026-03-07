@@ -195,10 +195,16 @@ def recipes_list(request):
         total_calories = sum(ri.ingredient_id.calories_kcal or 0 for ri in recipe_ingredients)
         total_protein = sum(ri.ingredient_id.protein_g or 0 for ri in recipe_ingredients)
         total_carbs = sum(ri.ingredient_id.carbs_g or 0 for ri in recipe_ingredients)
+        total_fiber = sum(ri.ingredient_id.fiber_g or 0 for ri in recipe_ingredients)
+        total_saturated_fat_g = sum(ri.ingredient_id.saturated_fat_g or 0 for ri in recipe_ingredients)
+
         nutrition_list.append({
             'calories': round(total_calories, 1) if total_calories else 'N/A',
             'protein': round(total_protein, 1) if total_protein else 'N/A',
             'carbs': round(total_carbs, 1) if total_carbs else 'N/A',
+            'fiber': round(total_fiber, 1) if total_carbs else 'N/A',
+            'fats': round(total_saturated_fat_g, 1) if total_carbs else 'N/A',
+
         })
  
     return render(request, 'recipes/recipes_list.html', {
