@@ -132,22 +132,7 @@ def registration_page(request):
                 print(f"Registration Error: {e}")
                 error_info["errors"]["registration"] = f"Database error: {e}"
 
-        
-                # disease_name = ""
-                # if user_disease:
-                #     disease_name = f"{user_disease.title}]"
-                
-                # UserPickedDisease.objects.get_or_create(
-                #     user=app_user,
-                #     defaults={'disease': disease_name}
-                # )
-
-                # M2M must be set AFTER create, NOT inside create()
-                # if user_disease:
-                #     app_user.diseases.set([user_disease])
-
-                # return redirect("login_page")
-            
+    
     all = {**error_info, "diseases": diseases}
     return render(request, 'main/register.html', all)
 
@@ -173,17 +158,18 @@ def recipes_list(request):
                 user_disease_ids = []
 
             # Get ingredient IDs to avoid based on user's diseases
-            avoid_ingredient_ids = Disease_Avoid_Food.objects.filter(
-                disease_id__in=user_disease_ids
-            ).values_list('ingredient_id', flat=True)
+            if user_disease_ids:
+                avoid_ingredient_ids = Disease_Avoid_Food.objects.filter(
+                    disease_id__in=user_disease_ids
+                ).values_list('ingredient_id', flat=True)
 
             # Exclude recipes that contain any avoided ingredients
-            if avoid_ingredient_ids:
-                avoided_recipe_ids = Recipe_Ingredients.objects.filter(
-                    ingredient_id__in=avoid_ingredient_ids
-                ).values_list('recipe_id', flat=True)
+                if avoid_ingredient_ids:
+                    avoided_recipe_ids = Recipe_Ingredients.objects.filter(
+                        ingredient_id__in=avoid_ingredient_ids
+                    ).values_list('recipe_id', flat=True)
 
-                recipes = recipes.exclude(id__in=avoided_recipe_ids)
+                    recipes = recipes.exclude(id__in=avoided_recipe_ids)
             
             super_ingredients_ids = Disease_Super_Food.objects.filter(
                 disease_id__in=user_disease_ids

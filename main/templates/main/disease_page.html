@@ -18,7 +18,7 @@
                 <div class="col-8 col-md-9">
 
                 
-                    <a href="{% url 'disease_detail' disease.id %}">
+                    <a href="{% url 'disease_detail' disease.id %}" class="text-dark text-decoration-none">
                         <h3 class="disease-title">{{ disease.title }}</h3>
                 
                     </a>
@@ -34,7 +34,12 @@
             </div>
             <div class="row mt-2">
                 <div class="col-12">
-                    <p class="disease-description">{{ disease.description }}</p>  
+                    <p class="disease-description">{{ disease.description }}</p> 
+                
+                    <p class="disease-related small text-muted">
+                        <strong>Related Diseases:</strong> {{ disease.related_diseases }}
+                    </p>
+                    
                     <hr class="card-divider">
                 </div>
             </div>
