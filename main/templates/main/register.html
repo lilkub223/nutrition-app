@@ -47,17 +47,17 @@
                     <div class="mb-3">
                         <label for="weight" class="form-label">Current Weight</label>
                         <div class="input-group">
-                            <input type="number" step="0.1" class="form-control" id="weight" name="weight">
+                            <input type="number" step="0.1" class="form-control" id="weight" name="weight" value="{{ weight }}">
                             <select class="form-select" name="weight_unit" style="max-width: 80px;">
-                                <option value="kg">kg</option>
-                                <option value="lbs">lbs</option>
+                                <option value="kg" {% if weight_unit == 'kg' %}selected{% endif %}>kg</option>
+                                <option value="lbs" {% if weight_unit == 'lbs'%}selected{% endif %}>lbs</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="mb-3">
                         <label for="goal_weight" class="form-label">Goal Weight</label>
-                        <input type="number" step="0.1" class="form-control" id="goal_weight" name="goal_weight">
+                        <input type="number" step="0.1" class="form-control" id="goal_weight" name="goal_weight" value="{{ goal_weight }}">
                     </div>
 
                     <div class="mb-3">
@@ -68,7 +68,7 @@
                     <div class="mb-3">
                         <label for="disease" class="form-label">Disease / Condition</label>
                         <select class="form-select" id="disease" name="disease">
-                            <option value="">NoneGiven</option>
+                            <option value="">None Given</option>
                             {% for d in diseases %}
                                 <option value="{{ d.id }}">{{ d.title}}</option>
                             {% endfor %}

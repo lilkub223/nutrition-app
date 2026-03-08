@@ -6,27 +6,53 @@
 <div>
     <a href="{% url 'disease_page'%}">Back to Disease List</a>
 
-    <h1>{{ diseases.title }}</h1>
+    <h3>{{ diseases.title }}</h3>
+    <div class="disease-description">
+        <strong>Disease Overview:</strong><br>
+        {{ diseases.description }}
+    </div>
+    <div class="row">
+        <div class="col-md-2">
+           <button type="button" 
+                        id="add-btn-{{ disease.id }}"
+                        class="btn btn-primary btn-sm mt-2" 
+                        onclick="addtoUserPickedDisease('{{ diseases.title|escapejs }}')">
+                        Add Disease To Profile
+            </button> 
+        </div>
+        <div class="col-md-2">
+            <a href="{% url 'selected_disease' %}" class="btn btn-success btn-sm mt-2">View Selected Disease</a>
+   
+        </div>
+    </div>
+     
+    <br><br>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <h4>Recommended Foods</h4>
+            <ul>
+                {% for food in diseases.disease_super_food_set.all %}
+                    <li>{{ food.ingredient_id.title }}</li>
+                {% empty %}
+                    <li>No Recommended Foods Available.</li>
+                {% endfor %}
+            </ul>
+        </div>
 
-    <h3>Recommended Foods</h3>
-    <ul>
-        {% for food in diseases.disease_super_food_set.all %}
-            <li>{{ food.ingredient_id }}</li>
-        {% empty %}
-            <li>No Recommended Foods Available.</li>
-        {% endfor %}
-    </ul>
+        <div class="col-md-4">
+            <h4>Foods To Avoid</h4>
+            <ul>
+                {% for food in diseases.disease_avoid_food_set.all %}
+                    <li>{{ food.ingredient_id.title }}</li>
+                {% empty %}
+                    <li>No Foods to Avoid Listed</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
 
-    <h3>Foods To Avoid</h3>
-    <ul>
-        {% for food in diseases.disease_avoid_food_set.all %}
-            <li>{{ food.ingredient_id }}</li>
-        {% empty %}
-            <li>No Foods to Avoid Listed</li>
-        {% endfor %}
-    </ul>
-
-    <h3>Nutritional Ranges</h3>
+    <h4>Our recommended Nutritional Ranges</h4>
     <p><strong>Calories:</strong> {{ diseases.low_calories_kcal }} - {{ diseases.high_calories_kcal }} kcal</p>
     <p><strong>Protein:</strong> {{ diseases.low_protein_g }} - {{ diseases.high_protein_g }} g</p>
     <p><strong>Carbs:</strong> {{ diseases.low_carbs_g }} - {{ diseases.high_carbs_g }} g</p>
@@ -50,10 +76,8 @@
     <p><strong>Fluoride:</strong> {{ diseases.low_fluoride_mg }} - {{ diseases.high_fluoride_mg }} mg</p>
     <p><strong>Chromium:</strong> {{ diseases.low_chromium_mg }} - {{ diseases.high_chromium_mg }} mg</p>
 </div>
-<input type="button" value="add" onclick="addtoUserPickedDisease('{{diseases.title|escapejs}}')">
+</div>
 
-<br><br>
-    <a href="{% url 'selected_disease' %}" class="btn btn-success">View Selected Disease</a>
 
 <script>
         // Helper function to get CSRF token from cookies, took from recipe-list to ensure correct format
@@ -76,6 +100,7 @@
         // This function is called when user clicks "add" button
         function addtoUserPickedDisease(diseaseTitle) {
             const csrftoken = getCookie('csrftoken');
+            //const button = document.getElementById(`add-btn-${diseaseId}`);
             
             // Send POST request to Django backend
             fetch('/add_to_picked_disease/', {
@@ -88,12 +113,19 @@
             })
             .then(response => response.json())  // Parse response JSON
             .then(data => {
+
                 // Show user-friendly message based on success/error
                 if (data.success) {
                     alert('Disease added to user profile!');
+
+                } else if (data.error && data.error.includes("Disease already selected!")){
+                    button.innerText = "Already Added";
+                    button.className = "btn btn-outline-secondary btn-sm w-100 disabled";
                 } else {
                     alert('Error: ' + data.error);
                 }
+                    
+                
             })
             .catch(error => {
                 // Handle network errors
