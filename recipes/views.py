@@ -1,5 +1,6 @@
 import json
 import random
+from django.db.models.manager import BaseManager
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.core.validators import validate_email
@@ -8,7 +9,7 @@ from django.contrib.auth import authenticate, login as auth_login, logout
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import recipes
-from recipes.models import Disease, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes, UserPickedDisease, Disease_Super_Food
+from recipes.models import Disease, Goal, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes, UserPickedDisease, Disease_Super_Food
 from recipes.models import Recipe
 from nutrition_project.settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
@@ -17,7 +18,8 @@ from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from datetime import date
-from recipes.models import DailyLog, MealEntry, WorkoutEntry
+from recipes.models import DailyLog, MealEntry, WorkoutEntry, WeightEntry
+from django.utils import timezone
 
 # Create your views here.
 def home(request):
@@ -780,3 +782,186 @@ def add_workout(request):
         
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+@login_required
+def goals_page(request):
+    app_user = AppUser.objects.get(user=request.user)
+    diseases = app_user.diseases.all()
+    active_goals = Goal.objects.filter(user=app_user, is_active=True).order_by("-created_at")
+    completed_goals = Goal.objects.filter(user=app_user, completed=True).order_by('-completed_at')
+    edit_goal = None
+    recent_weight_entries = WeightEntry.objects.filter(user=app_user)[:5]
+
+    default_calories = None
+    default_carbs = None
+    default_protein = None
+    default_fat = None
+
+    high_calories = None
+    high_carbs = None
+    high_protein = None
+    high_fat = None
+
+    # defaults set using disease minimum ranges
+    if diseases.exists():
+        disease = diseases.first()
+        default_calories = disease.low_calories_kcal
+        default_carbs = disease.low_carbs_g
+        default_protein = disease.low_protein_g
+        default_fat = disease.low_saturated_fat_g
+
+        high_calories = disease.high_calories_kcal
+        high_carbs = disease.high_carbs_g
+        high_protein = disease.high_protein_g
+        high_fat = disease.high_saturated_fat_g
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        #marks custom goal as completed
+        if action == "complete_goal":
+            goal_id = request.POST.get("goal_id")
+            try:
+                goal = Goal.objects.get(id=goal_id, user=app_user)
+                goal.completed = True
+                goal.completed_at = timezone.now()
+                goal.is_active = False
+                goal.save()
+                messages.success(request, "Goal marked as completed!")
+            except Goal.DoesNotExist:
+                messages.error(request, "Goal not found.")
+            return redirect('goals_page')
+        # creates a new custom goal
+        elif action == "create_custom_goal":
+            goal_name = request.POST.get("goal_name")
+            goal_description = request.POST.get("goal_description")
+            goal_target_value = request.POST.get("goal_target_value")
+            goal_time_period = request.POST.get("time_period")
+            goal_unit = request.POST.get("unit")
+
+            if goal_name:
+                Goal.objects.create(
+                    user=app_user,
+                    name=goal_name,
+                    description=goal_description,
+                    target_value=goal_target_value if goal_target_value else None,
+                    time_period=goal_time_period if goal_time_period else None,
+                    completed=False,
+                    is_active=True,
+                    unit=goal_unit if goal_unit else None,
+                )
+                messages.success(request, "Custom goal created successfully!")
+            else:
+                messages.error(request, "Goal name is required to create a custom goal.")
+            return redirect('goals_page')
+        elif action == "delete_goal":
+            goal_id = request.POST.get("goal_id")
+
+            try:
+                goal = Goal.objects.get(id=goal_id, user=app_user)
+                goal.delete()
+                messages.success(request, "Goal deleted successfully!")
+            except Goal.DoesNotExist:
+                messages.error(request, "Goal not found.")
+
+            return redirect('goals_page')
+        elif action == "start_edit_goal":
+            goal_id = request.POST.get("goal_id")
+            
+
+            try:
+                edit_goal = Goal.objects.get(id=goal_id, user=app_user, is_active=True)
+            except Goal.DoesNotExist:
+                messages.error(request, "Goal not found.")
+        elif action == "edit_goal":
+            goal_id = request.POST.get("goal_id")
+
+            try:
+                goal = Goal.objects.get(id=goal_id, user=app_user, is_active=True)
+                goal_name = request.POST.get("goal_name")
+                goal_description = request.POST.get("goal_description")
+                goal_target_value = request.POST.get("goal_target_value")
+                goal_time_period = request.POST.get("time_period")
+                goal_unit = request.POST.get("unit")
+
+                if goal_name:
+                    goal.name = goal_name
+                    goal.description = goal_description
+                    goal.target_value = goal_target_value if goal_target_value else None
+                    goal.time_period = goal_time_period if goal_time_period else None
+                    goal.unit = goal_unit if goal_unit else None
+                    goal.save()
+                    messages.success(request, "Goal updated successfully!")
+                else:
+                    messages.error(request, "Goal name is required.")
+
+            except Goal.DoesNotExist:
+                messages.error(request, "Goal not found.")
+
+            return redirect('goals_page')
+        # update nutrition/activity/weight goals
+        else:
+            calorie_goal = request.POST.get("calorie_goal")
+            carb_goal = request.POST.get("carb_goal")
+            protein_goal = request.POST.get("protein_goal")
+            fat_goal = request.POST.get("fat_goal")
+            current_weight = request.POST.get("weight")
+            goal_weight = request.POST.get("goal_weight")
+            activity_level = request.POST.get("activity_level")
+
+            app_user.calorie_goal = calorie_goal or default_calories
+            app_user.carb_goal = carb_goal or default_carbs
+            app_user.protein_goal = protein_goal or default_protein
+            app_user.fat_goal = fat_goal or default_fat
+            app_user.goal_weight = goal_weight or app_user.goal_weight
+            app_user.activity_level = activity_level or app_user.activity_level
+            try:
+                if current_weight:
+                    current_weight_value = float(current_weight)
+                    if app_user.weight != current_weight_value:
+                        app_user.weight = current_weight_value
+                        WeightEntry.objects.create(user=app_user, weight=current_weight_value)
+            except ValueError:
+                messages.error(request, "Please enter a valid number for weight.")
+                return redirect('goals_page')
+            app_user.save()
+
+            warnings = []
+
+            try:
+                if app_user.calorie_goal is not None and high_calories is not None and float(app_user.calorie_goal)>float(high_calories):
+                    warnings.append(f"Your calorie goal of {app_user.calorie_goal} kcal exceeds the recommended maximum of {high_calories} kcal for your condition.")
+                if app_user.carb_goal is not None and high_carbs is not None and float(app_user.carb_goal)>float(high_carbs):
+                    warnings.append(f"Your carbohydrate goal of {app_user.carb_goal} g exceeds the recommended maximum of {high_carbs} g for your condition.")
+                if app_user.protein_goal is not None and high_protein is not None and float(app_user.protein_goal)>float(high_protein):
+                    warnings.append(f"Your protein goal of {app_user.protein_goal} g exceeds the recommended maximum of {high_protein} g for your condition.")
+                if app_user.fat_goal is not None and high_fat is not None and float(app_user.fat_goal)>float(high_fat):
+                    warnings.append(f"Your fat goal of {app_user.fat_goal} g exceeds the recommended maximum of {high_fat} g for your condition.")
+            except ValueError:
+                messages.error(request, "Please enter valid numeric values for goals.")
+                return redirect('goals_page')
+            if warnings:
+                for warning in warnings:
+                    messages.warning(request, warning)
+            else:
+                messages.success(request, "Goals updated successfully!")
+            return redirect('goals_page')
+
+       
+    
+    context = {
+        "app_user": app_user,
+        "default_calories": default_calories,
+        "default_carbs": default_carbs,
+        "default_protein": default_protein,
+        "default_fat": default_fat,
+        "high_calories": high_calories,
+        "high_carbs": high_carbs,
+        "high_protein": high_protein,
+        "high_fat": high_fat,
+        "active_goals": active_goals,
+        "completed_goals": completed_goals,
+        "edit_goal": edit_goal,
+        "recent_weight_entries": recent_weight_entries,
+    }
+    return render(request, 'recipes/goals.html', context)

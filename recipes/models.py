@@ -18,6 +18,11 @@ class AppUser(models.Model):
     meals_per = models.IntegerField(blank=True, null=True)
     snacks_per = models.IntegerField(blank=True, null=True)
     activity_level = models.CharField(max_length=50, blank=True, null=True)
+    #Added additional fields for nutrition specific goals
+    calorie_goal = models.FloatField(blank=True, null=True)
+    carb_goal = models.FloatField(blank=True, null=True)
+    protein_goal = models.FloatField(blank=True, null=True)
+    fat_goal = models.FloatField(blank=True, null=True)
 
 
 class Recipe(models.Model):
@@ -319,85 +324,6 @@ class WorkoutEntry(models.Model):
         return f"{self.workout_type} - {self.calories_burned} kcal burned"
 
 
-class DailyLog(models.Model):
-    """
-    Stores daily nutrition intake for each user
-    """
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='daily_logs')
-    date = models.DateField(default=timezone.now)
-    
-    # Daily totals
-    total_calories = models.FloatField(default=0)
-    total_protein = models.FloatField(default=0)
-    total_carbs = models.FloatField(default=0)
-    total_fats = models.FloatField(default=0)
-    total_burned = models.FloatField(default=0)
-    calorie_goal = models.FloatField(default=2000)
-    
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-        unique_together = ('user', 'date')  # One log per user per day
-        ordering = ['-date']
-    
-    def __str__(self):
-        return f"{self.user.email} - {self.date}"
-    
-    @property
-    def net_calories(self):
-        """Calories consumed minus calories burned"""
-        return self.total_calories - self.total_burned
-    
-    @property
-    def remaining_calories(self):
-        """Calories remaining for the day"""
-        return self.calorie_goal - self.net_calories
-
-
-class MealEntry(models.Model):
-    """
-    Individual meals/food entries for a daily log
-    """
-    daily_log = models.ForeignKey(DailyLog, on_delete=models.CASCADE, related_name='meals')
-    meal_name = models.CharField(max_length=200, default='Meal')
-    calories = models.FloatField()
-    protein = models.FloatField(default=0)
-    carbs = models.FloatField(default=0)
-    fats = models.FloatField(default=0)
-    logged_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        ordering = ['-logged_at']
-    
-    def __str__(self):
-        return f"{self.meal_name} - {self.calories} kcal"
-
-
-class WorkoutEntry(models.Model):
-    """
-    Workout/exercise entries for a daily log
-    """
-    WORKOUT_TYPES = [
-        ('cardio', 'Cardio'),
-        ('strength', 'Strength Training'),
-        ('yoga', 'Yoga'),
-        ('sports', 'Sports'),
-        ('walking', 'Walking'),
-        ('running', 'Running'),
-        ('other', 'Other'),
-    ]
-    
-    daily_log = models.ForeignKey(DailyLog, on_delete=models.CASCADE, related_name='workouts')
-    workout_type = models.CharField(max_length=50, choices=WORKOUT_TYPES)
-    calories_burned = models.FloatField()
-    logged_at = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        ordering = ['-logged_at']
-    
-    def __str__(self):
-        return f"{self.workout_type} - {self.calories_burned} kcal burned"
 
 class UserPickedDisease(models.Model):
     user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
@@ -434,3 +360,30 @@ class Dietary_Restriction_Recipe(models.Model):
     
         def __str__(self):
             return f"{self.dietary_restriction.title} - {self.recipe.title}"
+
+class Goal(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    target_value = models.FloatField(blank=True, null=True)
+    time_period = models.CharField(max_length=20, blank=True, null=True) # for weekly or daily
+    completed = models.BooleanField(default=False)
+    unit = models.CharField(max_length=50, blank=True, null=True) #calories, grams, etc.
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
+
+
+    def __str__(self):
+        return f"{self.name} ({self.user.user.username})"
+    
+class WeightEntry(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name="weight_entries")
+    weight = models.FloatField()
+    logged_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-logged_at']
+
+    def __str__(self):
+        return f"{self.user.user.username} - {self.weight}"
