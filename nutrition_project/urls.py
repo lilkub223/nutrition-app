@@ -28,5 +28,7 @@ urlpatterns = [
     path('weekly_digest/', views.weekly_digest, name='weekly_digest'),
     path('selected_disease/', views.selected_disease, name='selected_disease'),
     path('add_to_picked_disease/', views.add_to_picked_disease, name='add_to_picked_disease'),
-    path('custom_recipe/', views.custom_user_recipe, name='custom_recipe')
+    path('custom_recipe/', views.custom_user_recipe, name='custom_recipe'),
+    path('recipe_info/<int:recipe_id>', views.recipe_info, name='recipe_info'),
+    path('remove_recipes/', views.remove_recipes, name='remove_recipes')
 ]

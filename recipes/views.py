@@ -1,5 +1,6 @@
 import json
 import random
+import re
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.core.validators import validate_email
@@ -7,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from urllib.parse import unquote
 import recipes
 from recipes.models import Disease, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes, UserPickedDisease, Disease_Super_Food
 from recipes.models import Recipe
@@ -288,10 +290,60 @@ def selected_recipes(request):
     except UserPickedRecipes.DoesNotExist:
         recipe_list = []
 
-    return render(request, 'recipes/selected_recipes.html', {"recipes": recipe_list})
+
+    nutrition_list = []
+    i = 0
+    for recipe in recipe_list:
+        current_recipe = Recipe.objects.get(title=recipe)
+        recipe_list[i] = current_recipe
+        recipe_ingredients = Recipe_Ingredients.objects.filter(recipe_id=current_recipe.id).select_related('ingredient_id')
+        total_calories = sum(ri.ingredient_id.calories_kcal or 0 for ri in recipe_ingredients)
+        total_protein = sum(ri.ingredient_id.protein_g or 0 for ri in recipe_ingredients)
+        total_carbs = sum(ri.ingredient_id.carbs_g or 0 for ri in recipe_ingredients)
+        total_fiber = sum(ri.ingredient_id.fiber_g or 0 for ri in recipe_ingredients)
+        total_saturated_fat_g = sum(ri.ingredient_id.saturated_fat_g or 0 for ri in recipe_ingredients)
+
+        nutrition_list.append({
+            'calories': round(total_calories, 1) if total_calories else 'N/A',
+            'protein': round(total_protein, 1) if total_protein else 'N/A',
+            'carbs': round(total_carbs, 1) if total_carbs else 'N/A',
+            'fiber': round(total_fiber, 1) if total_carbs else 'N/A',
+            'fats': round(total_saturated_fat_g, 1) if total_carbs else 'N/A',
+
+        })
+        
+        i += 1
+    
+
+    return render(request, 'recipes/selected_recipes.html', {"recipes": recipe_list, "recipes_with_nutrition": list(zip(recipe_list, nutrition_list))})
 
 
+def remove_recipes(request):
+    try:
+        app_user = AppUser.objects.get(user=request.user)
+        
+        user_picks = UserPickedRecipes.objects.get(user=app_user)
+    
+        if user_picks.recipe:
+            recipe_list = user_picks.recipe.rstrip("]").split("]")
+            recipe_list = [r for r in recipe_list if r]  # Remove empty strings
+        else:
+            recipe_list = []
 
+    except AppUser.DoesNotExist:
+        recipe_list = []
+    except UserPickedRecipes.DoesNotExist:
+        recipe_list = []
+
+    data = json.loads(request.body)
+    recipe_title = data.get('recipe_title')
+
+    if recipe_title in recipe_list:
+        recipe_list.remove(recipe_title)
+    
+    user_picks.recipe = "]".join(recipe_list) + "]"
+    user_picks.save()
+    return JsonResponse({'success': True, 'message': f'Removed {recipe_title} from your picks!'})
 
 # Forgot password page
 def forgot_password_page(request):
@@ -780,3 +832,18 @@ def add_workout(request):
         
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+
+
+def recipe_info(request, recipe_id):
+    recipe = Recipe.objects.get(id=recipe_id)
+    recipe_ingredient_list = Recipe_Ingredients.objects.filter(recipe_id=recipe.id)
+    ingredient_list = []
+    instructions = recipe.how_to_cook
+    instruction_list = re.split(r'\d+\.\s', instructions.strip('"'))[1:]
+
+    for i in recipe_ingredient_list:
+        ingredient_list.append(i.ingredient_id)
+    
+
+    return render(request,'recipes/recipe_info.html', {"recipe": recipe, "ingredients": ingredient_list, "instructions": instruction_list})
