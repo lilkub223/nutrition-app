@@ -646,12 +646,7 @@ def daily_digest(request):
 
 
 
-@login_required
-def daily_digest(request):
-    """
-    Display the daily nutrition digest page
-    """
-    return render(request, 'recipes/daily_digest.html')
+
 
 
 @login_required
@@ -661,12 +656,13 @@ def get_daily_data(request):
     API endpoint to get today's daily log data
     """
     today = date.today()
+    app_user = AppUser.objects.get(user=request.user)
     
     # Get or create today's log
     daily_log, created = DailyLog.objects.get_or_create(
         user=request.user,
         date=today,
-        defaults={'calorie_goal': 2000}
+        defaults={'calorie_goal': app_user.calorie_goal or 2000} #gets user set goal or default of 2000
     )
     
     # Get all meals for today
@@ -704,13 +700,14 @@ def add_meal(request):
     try:
         data = json.loads(request.body)
         today = date.today()
+        app_user = AppUser.objects.get(user=request.user)
         
         # Get or create today's log
         daily_log, created = DailyLog.objects.get_or_create(
             user=request.user,
             date=today,
-            defaults={'calorie_goal': 2000}
-        )
+            defaults={'calorie_goal': app_user.calorie_goal or 2000} #gets user set goal or default of 2000
+    )
         
         # Create meal entry
         meal = MealEntry.objects.create(
@@ -753,12 +750,13 @@ def add_workout(request):
     try:
         data = json.loads(request.body)
         today = date.today()
+        app_user = AppUser.objects.get(user=request.user)
         
         # Get or create today's log
         daily_log, created = DailyLog.objects.get_or_create(
             user=request.user,
             date=today,
-            defaults={'calorie_goal': 2000}
+            defaults={'calorie_goal': app_user.calorie_goal or 2000} #gets user set goal or default of 2000
         )
         
         # Create workout entry

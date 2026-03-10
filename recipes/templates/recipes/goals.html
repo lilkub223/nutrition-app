@@ -414,6 +414,18 @@
     </div>
 </div>
 
+<!--CHECK TO SEE IF USER HAS REACHED THEIR GOAL WEIGHT-->
+{% if recent_weight_entries %}
+    {% with latest=recent_weight_entries.0 %}
+        {% if app_user.goal_weight and latest.weight <= app_user.goal_weight %}
+            <div class="alert alert-success mt-3">
+                Congratulations! You have reached your goal weight.
+            </div>
+        {% endif %}
+    {% endwith %}
+{% endif %}
+
+
 <!-- RECENT WEIGHT HISTORY -->
 <div class="card mb-4">
     <div class="card-body">

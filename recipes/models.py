@@ -5,6 +5,11 @@ from django.utils import timezone
 
 
 class AppUser(models.Model):
+    WEIGHT_GOAL_CHOICES = [
+        ("lose", "Lose Weight"),
+        ("gain", "Gain Weight"),
+        ("maintain", "Maintain Weight"),
+    ]
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bmr = models.FloatField(blank=True, null=True)
     diseases = models.ManyToManyField("Disease", blank=True)
@@ -23,6 +28,12 @@ class AppUser(models.Model):
     carb_goal = models.FloatField(blank=True, null=True)
     protein_goal = models.FloatField(blank=True, null=True)
     fat_goal = models.FloatField(blank=True, null=True)
+    weight_goal_type = models.CharField(
+        max_length=20,
+        choices=WEIGHT_GOAL_CHOICES,
+        blank=True,
+        null=True
+    )
 
 
 class Recipe(models.Model):
