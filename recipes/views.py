@@ -9,8 +9,10 @@ from django.contrib.auth import authenticate, login as auth_login, logout
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from urllib.parse import unquote
+
+from urllib3 import request
 import recipes
-from recipes.models import Disease, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes, UserPickedDisease, Disease_Super_Food
+from recipes.models import Disease, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes, UserPickedDisease, Disease_Super_Food,DailyLog, WorkoutEntry
 from recipes.models import Recipe
 from nutrition_project.settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
@@ -18,7 +20,7 @@ from django.contrib import messages
 from django.shortcuts import get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
-from datetime import date
+from datetime import date, timedelta
 from recipes.models import DailyLog, MealEntry, WorkoutEntry
 
 # Create your views here.
@@ -676,6 +678,33 @@ def weekly_digest(request):
     # Get most common ingredient
     most_common_ingredient = max(ingredient_count, key=ingredient_count.get) if ingredient_count else None
 
+    sevenDaysAgo = date.today() - timedelta(days=7)
+    results = DailyLog.objects.all().filter(user=request.user)
+    results = results.filter(date__gte=sevenDaysAgo)
+    sevenDaysAgoLst = [date.today() - timedelta(days=i) for i in range(7)]
+
+    results_json = json.dumps([
+        {
+            'date': str(log.date),
+            'total_calories': log.total_calories,
+            'total_protein': log.total_protein,
+            'total_carbs': log.total_carbs,
+            'total_fats': log.total_fats,
+            'net_calories': log.net_calories,
+        }
+        for log in results
+    ])
+    
+    myWorkouts= WorkoutEntry.objects.filter(daily_log__in=results)
+    mydict = {str(date): 0 for date in sevenDaysAgoLst}
+    for w in myWorkouts:
+        mydict[str(w.daily_log.date)] += 1
+
+
+    workouts_json = json.dumps({str(k): v for k, v in mydict.items()})
+
+        
+
 
     return render(request, 'recipes/weekly_digest.html', {
         'recipes': recipes,
@@ -686,6 +715,8 @@ def weekly_digest(request):
         'lowest_cal_recipe': lowest_cal_recipe,
         'highest_cal': round(highest_cal, 1),
         'lowest_cal': round(lowest_cal, 1),
+        'results_json': results_json,
+        'workouts_json': workouts_json,
     })
 
 @login_required

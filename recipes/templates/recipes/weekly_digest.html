@@ -47,6 +47,48 @@
     {% endif %}
 
     <hr>
+    <canvas id="CalorieChart" style="width:100%;max-width:700px"></canvas>
+    <canvas id="WorkoutsChart" style="width:100%;max-width:700px"></canvas>
+
+
 
 </div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.min.js"></script>
+<script >
+const results = {{ results_json|safe }};
+const workouts = {{ workouts_json|safe }};
+
+
+const barColors = ["red", "green","blue","orange","brown", "purple", "cyan"];
+
+const labels = results.map(d => d.date);
+const calories = results.map(d => d.total_calories);
+const dates = Object.keys(workouts);
+const workout_counts = Object.values(workouts);
+
+new Chart("CalorieChart", {
+  type: "bar",
+  data: {
+    labels: labels,
+    datasets: [{
+        label: 'Net Calories',
+      backgroundColor: barColors,
+      data: calories
+    }]
+  },
+  options: {}
+});
+new Chart("WorkoutsChart", {
+  type: "bar",
+  data: {
+    labels: labels,
+    datasets: [{
+        label: 'Workout Counts',
+      backgroundColor: barColors,
+      data: workout_counts
+    }]
+  },
+  options: {}
+});
+</script>
 {% endblock %}
