@@ -703,7 +703,6 @@ def weekly_digest(request):
 
     workouts_json = json.dumps({str(k): v for k, v in mydict.items()})
 
-        
 
 
     return render(request, 'recipes/weekly_digest.html', {
@@ -874,8 +873,34 @@ def recipe_info(request, recipe_id):
     instructions = recipe.how_to_cook
     instruction_list = re.split(r'\d+\.\s', instructions.strip('"'))[1:]
 
+
     for i in recipe_ingredient_list:
         ingredient_list.append(i.ingredient_id)
+
+
+        
+    total_calories=0
+    total_protein=0
+    total_carbs=0
+    total_fiber=0
+    total_saturated_fat_g=0
+
+    qSetofingredients = Recipe_Ingredients.objects.filter(recipe_id=recipe.id).select_related('ingredient_id')
+    for i in qSetofingredients:
+        total_calories += i.ingredient_id.calories_kcal or 0
+        total_protein += i.ingredient_id.protein_g or 0
+        total_carbs += i.ingredient_id.carbs_g or 0
+        total_fiber += i.ingredient_id.fiber_g or 0
+        total_saturated_fat_g += i.ingredient_id.saturated_fat_g or 0
+
+    dictionaryOfNutritionFacts = {
+        'calories': round(total_calories, 1) if total_calories else 'N/A',
+        'protein': round(total_protein, 1) if total_protein else 'N/A',
+        'carbs': round(total_carbs, 1) if total_carbs else 'N/A',
+        'fiber': round(total_fiber, 1) if total_fiber else 'N/A',
+        'fats': round(total_saturated_fat_g, 1) if total_saturated_fat_g else 'N/A',
+    }
+
     
 
     return render(request,'recipes/recipe_info.html', {"recipe": recipe, "ingredients": ingredient_list, "instructions": instruction_list})
