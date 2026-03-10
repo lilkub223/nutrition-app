@@ -559,24 +559,31 @@ def custom_user_recipe(request):
     if request.method == "POST":
         title = request.POST.get('title')
         mealType = request.POST.getlist('type')
-        ingredientList = request.POST.getlist('ingredient-selection')
-        amountsList = request.POST.getlist('ingredient-amount')
+        ingredientList = [i.strip() for i in request.POST.getlist('ingredient-selection') if i.strip()]
+        amountsList = [a.strip() for a in request.POST.getlist('ingredient-amount') if a.strip()]
         instructions = request.POST.get('instructions')
 
+
+
+        if Recipe.objects.filter(title=title):
+            error_info["errors"]["title"] = "Recipe with that name already exists"
+
         if not title:
-            error_info["errors"]["title"] = "Error"
+            error_info["errors"]["title"] = "Title is required"
+        
+        
         
         if not mealType:
-            error_info["errors"]["type"] = "Error"
+            error_info["errors"]["type"] = "Select at least one meal type"
 
         if not ingredientList:
-            error_info["errors"]["ingredients"] = "Error"
+            error_info["errors"]["ingredients"] = "Ingredient cannot be empty (input ingredient or remove field)"
 
-        if not amountsList:
-            error_info["errors"]["amounts"] = "Error"
+        if not amountsList or len(amountsList) != len(ingredientList):
+            error_info["errors"]["amounts"] = "Amount is required for all ingredients"
 
-        if not instructions:
-            error_info["errors"]["instructions"] = "Error"
+        if not instructions or instructions.strip() == "":
+            error_info["errors"]["instructions"] = "Cooking instructions are required"
 
         if not error_info["errors"]:
             newId = 1
@@ -594,18 +601,18 @@ def custom_user_recipe(request):
                 how_to_cook = instructions
             )
 
-            for i in range(len(ingredientList)):
-                current_ingredient_id = Ingredient.objects.get(title=ingredientList[i]).id
+            for i,a in list(zip(ingredientList, amountsList)):
+                current_ingredient_id = Ingredient.objects.filter(title=i).first().id
                 Recipe_Ingredients.objects.create(
                     recipe_id = Recipe.objects.get(id=newId),
                     ingredient_id = Ingredient.objects.get(id=current_ingredient_id),
-                    amount = amountsList[i]
+                    amount = a
                 )
             
             return redirect('recipes_list')
 
     ingredients = Ingredient.objects.all()
-    return render(request, 'recipes/customrecipe.html', {'ingredients':ingredients, "errors":error_info["errors"]})
+    return render(request, 'recipes/customrecipe.html', {'ingredients':ingredients, "errors": error_info['errors']})
 
 def weekly_digest(request):
     if not request.user.is_authenticated:
