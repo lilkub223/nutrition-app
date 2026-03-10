@@ -884,6 +884,26 @@ def recipe_info(request, recipe_id):
     total_carbs=0
     total_fiber=0
     total_saturated_fat_g=0
+    Sugar_g = 0
+    cholesterol_mg = 0
+    sodium_mg = 0
+    potassium_mg = 0
+    Iron_mg = 0
+    Calcium_mg = 0
+    Phosphorus_mg = 0
+    magnesium_mg = 0
+    Vitamin_A_ug = 0
+    vitamin_b_mg = 0
+    Vitamin_C_mg = 0
+    Vitamin_D_ug = 0
+    Vitamin_E_mg = 0
+    Vitamin_K_ug = 0
+    Zinc_mg = 0
+    Iodine_ug = 0
+    Selenium_ug = 0
+    Copper_mg = 0
+    Fluoride_mg = 0
+    Chromium_mg = 0
 
     qSetofingredients = Recipe_Ingredients.objects.filter(recipe_id=recipe.id).select_related('ingredient_id')
     for i in qSetofingredients:
@@ -892,6 +912,26 @@ def recipe_info(request, recipe_id):
         total_carbs += i.ingredient_id.carbs_g or 0
         total_fiber += i.ingredient_id.fiber_g or 0
         total_saturated_fat_g += i.ingredient_id.saturated_fat_g or 0
+        Sugar_g += i.ingredient_id.Sugar_g or 0
+        cholesterol_mg += i.ingredient_id.cholesterol_mg or 0
+        sodium_mg += i.ingredient_id.sodium_mg or 0
+        potassium_mg += i.ingredient_id.potassium_mg or 0
+        Iron_mg += i.ingredient_id.Iron_mg or 0
+        Calcium_mg += i.ingredient_id.Calcium_mg or 0
+        Phosphorus_mg += i.ingredient_id.Phosphorus_mg or 0
+        magnesium_mg += i.ingredient_id.magnesium_mg or 0
+        Vitamin_A_ug += i.ingredient_id.Vitamin_A_ug or 0
+        vitamin_b_mg += i.ingredient_id.vitamin_b_mg or 0
+        Vitamin_C_mg += i.ingredient_id.Vitamin_C_mg or 0
+        Vitamin_D_ug += i.ingredient_id.Vitamin_D_ug or 0
+        Vitamin_E_mg += i.ingredient_id.Vitamin_E_mg or 0
+        Vitamin_K_ug += i.ingredient_id.Vitamin_K_ug or 0
+        Zinc_mg += i.ingredient_id.Zinc_mg or 0
+        Iodine_ug += i.ingredient_id.Iodine_ug or 0
+        Selenium_ug += i.ingredient_id.Selenium_ug or 0
+        Copper_mg += i.ingredient_id.Copper_mg or 0
+        Fluoride_mg += i.ingredient_id.Fluoride_mg or 0
+        Chromium_mg += i.ingredient_id.Chromium_mg or 0
 
     dictionaryOfNutritionFacts = {
         'calories': round(total_calories, 1) if total_calories else 'N/A',
@@ -899,6 +939,26 @@ def recipe_info(request, recipe_id):
         'carbs': round(total_carbs, 1) if total_carbs else 'N/A',
         'fiber': round(total_fiber, 1) if total_fiber else 'N/A',
         'fats': round(total_saturated_fat_g, 1) if total_saturated_fat_g else 'N/A',
+        'Sugar_g': round(Sugar_g, 1) if Sugar_g else 'N/A',
+        'cholesterol_mg': round(cholesterol_mg, 1) if cholesterol_mg else 'N/A',
+        'sodium_mg': round(sodium_mg, 1) if sodium_mg else 'N/A',
+        'potassium_mg': round(potassium_mg, 1) if potassium_mg else 'N/A',
+        'Iron_mg': round(Iron_mg, 1) if Iron_mg else 'N/A',
+        'Calcium_mg': round(Calcium_mg, 1) if Calcium_mg else 'N/A',
+        'Phosphorus_mg': round(Phosphorus_mg, 1) if Phosphorus_mg else 'N/A',
+        'magnesium_mg': round(magnesium_mg, 1) if magnesium_mg else 'N/A',
+        'Vitamin_A_ug': round(Vitamin_A_ug, 1) if Vitamin_A_ug else 'N/A',
+        'vitamin_b_mg': round(vitamin_b_mg, 1) if vitamin_b_mg else 'N/A',
+        'Vitamin_C_mg': round(Vitamin_C_mg, 1) if Vitamin_C_mg else 'N/A',
+        'Vitamin_D_ug': round(Vitamin_D_ug, 1) if Vitamin_D_ug else 'N/A',
+        'Vitamin_E_mg': round(Vitamin_E_mg, 1) if Vitamin_E_mg else 'N/A',
+        'Vitamin_K_ug': round(Vitamin_K_ug, 1) if Vitamin_K_ug else 'N/A',
+        'Zinc_mg': round(Zinc_mg, 1) if Zinc_mg else 'N/A',
+        'Iodine_ug': round(Iodine_ug, 1) if Iodine_ug else 'N/A',
+        'Selenium_ug': round(Selenium_ug, 1) if Selenium_ug else 'N/A',
+        'Copper_mg': round(Copper_mg, 1) if Copper_mg else 'N/A',
+        'Fluoride_mg': round(Fluoride_mg, 1) if Fluoride_mg else 'N/A',
+        'Chromium_mg': round(Chromium_mg, 1) if Chromium_mg else 'N/A'
     }
 
     
