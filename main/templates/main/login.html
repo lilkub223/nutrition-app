@@ -16,8 +16,8 @@
             <div class="card-body p-4">
 
                 <!-- Error Messages -->
-                {% if messages %}
-                    {% for message in messages %}
+                {% if errors %}
+                    {% for field, message in errors.items %}
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                             {{ message }}
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
