@@ -354,3 +354,10 @@ class WeightEntry(models.Model):
 
     def __str__(self):
         return f"{self.user.user.username} - {self.weight}"
+    
+class Quote(models.Model):
+     id = models.IntegerField(primary_key=True)
+     quote = models.TextField()
+     def __str__(self):
+          return self.quote[:50]  # returns the first 50 characters of the quote for display purposes
+ 
