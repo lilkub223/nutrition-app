@@ -22,9 +22,9 @@
         <h3>Nutrient Info:</h3>
         <p>(Info displayed is based on 1 serving)</p>
         <ul>
-            <!--
-            loop for nutrition values
-            -->
+            {% for n,a in nutrition.items %}
+            <li>{{ n }} - {{ a }}</li>
+            {% endfor %}
         </ul>
         <h3>Ingredient List:</h3>
         <ul>

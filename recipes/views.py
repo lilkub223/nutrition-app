@@ -938,26 +938,26 @@ def recipe_info(request, recipe_id):
         total_carbs += i.ingredient_id.carbs_g or 0
         total_fiber += i.ingredient_id.fiber_g or 0
         total_saturated_fat_g += i.ingredient_id.saturated_fat_g or 0
-        Sugar_g += i.ingredient_id.Sugar_g or 0
+        Sugar_g += i.ingredient_id.sugar_g or 0
         cholesterol_mg += i.ingredient_id.cholesterol_mg or 0
         sodium_mg += i.ingredient_id.sodium_mg or 0
         potassium_mg += i.ingredient_id.potassium_mg or 0
-        Iron_mg += i.ingredient_id.Iron_mg or 0
-        Calcium_mg += i.ingredient_id.Calcium_mg or 0
-        Phosphorus_mg += i.ingredient_id.Phosphorus_mg or 0
+        Iron_mg += i.ingredient_id.iron_mg or 0
+        Calcium_mg += i.ingredient_id.calcium_mg or 0
+        Phosphorus_mg += i.ingredient_id.phosphorus_mg or 0
         magnesium_mg += i.ingredient_id.magnesium_mg or 0
-        Vitamin_A_ug += i.ingredient_id.Vitamin_A_ug or 0
+        Vitamin_A_ug += i.ingredient_id.vitamin_a_ug or 0
         vitamin_b_mg += i.ingredient_id.vitamin_b_mg or 0
-        Vitamin_C_mg += i.ingredient_id.Vitamin_C_mg or 0
-        Vitamin_D_ug += i.ingredient_id.Vitamin_D_ug or 0
-        Vitamin_E_mg += i.ingredient_id.Vitamin_E_mg or 0
-        Vitamin_K_ug += i.ingredient_id.Vitamin_K_ug or 0
-        Zinc_mg += i.ingredient_id.Zinc_mg or 0
-        Iodine_ug += i.ingredient_id.Iodine_ug or 0
-        Selenium_ug += i.ingredient_id.Selenium_ug or 0
-        Copper_mg += i.ingredient_id.Copper_mg or 0
-        Fluoride_mg += i.ingredient_id.Fluoride_mg or 0
-        Chromium_mg += i.ingredient_id.Chromium_mg or 0
+        Vitamin_C_mg += i.ingredient_id.vitamin_c_mg or 0
+        Vitamin_D_ug += i.ingredient_id.vitamin_d_ug or 0
+        Vitamin_E_mg += i.ingredient_id.vitamin_e_mg or 0
+        Vitamin_K_ug += i.ingredient_id.vitamin_k_ug or 0
+        Zinc_mg += i.ingredient_id.zinc_mg or 0
+        Iodine_ug += i.ingredient_id.iodine_ug or 0
+        Selenium_ug += i.ingredient_id.selenium_ug or 0
+        Copper_mg += i.ingredient_id.copper_mg or 0
+        Fluoride_mg += i.ingredient_id.fluoride_mg or 0
+        Chromium_mg += i.ingredient_id.chromium_mg or 0
 
     dictionaryOfNutritionFacts = {
         'calories': round(total_calories, 1) if total_calories else 'N/A',
@@ -998,7 +998,7 @@ def recipe_info(request, recipe_id):
 
 
 
-    return render(request,'recipes/recipe_info.html', {"recipe": recipe, "ingredients": list(zip(ingredient_list, amount_list)), "instructions": instruction_list})    
+    return render(request,'recipes/recipe_info.html', {"recipe": recipe, "ingredients": list(zip(ingredient_list, amount_list)), "instructions": instruction_list, "nutrition": dictionaryOfNutritionFacts})    
 @login_required
 def goals_page(request):
     app_user = AppUser.objects.get(user=request.user)
