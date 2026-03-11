@@ -24,14 +24,14 @@
             <thead>
                 <tr>
                     <th>Ingredient</th>
-                    <th>Recipe Count</th>
+                    <th>Amount Needed</th>
                 </tr>
             </thead>
             <tbody>
                 {% for name, amount in ingredients.items %}
                     <tr>
-                        <td id="ingredient">{{ name }}</td>
-                        <td id="recipe-amount">{{ amount }}</td>
+                        <td id="ingredient">{{ name.title }}</td>
+                        <td id="recipe-amount">{{ amount }} {{ name.measurements }}</td>
                     </tr>
                 {% endfor %}
             </tbody>

@@ -1,4 +1,7 @@
 import json
+import random
+import re
+from django.db.models.manager import BaseManager
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.core.validators import validate_email
@@ -6,23 +9,39 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import authenticate, login as auth_login, logout
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from recipes.models import Disease, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes, UserPickedDisease, Disease_Super_Food
+from urllib.parse import unquote
+
+from urllib3 import request
+import recipes
+from recipes.models import Disease, Goal, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes, UserPickedDisease, Disease_Super_Food,DailyLog, WorkoutEntry
 from recipes.models import Recipe
 from nutrition_project.settings import EMAIL_HOST_USER
 from django.core.mail import send_mail
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
+from datetime import date, timedelta
+from recipes.models import DailyLog, MealEntry, WorkoutEntry, WeightEntry
+from django.utils import timezone
+from recipes.models import Disease, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes, Disease_Super_Food
+from recipes.models import Quote
+import random
 
-# Create your views here.
 def home(request):
-    if not request.user.is_authenticated:
-        return redirect("login_page")
+    quote = None
+    if request.user.is_authenticated:
+        # Get random quote from database
+        quotes = Quote.objects.all()
+        if quotes.exists():
+            quote = random.choice(list(quotes))
+        else:
+            # Default quote if none in database
+            quote = type('obj', (object,), {
+                'quote': 'Your health is your wealth. Invest in it daily.',
+            })
     
-    #diseases = Disease.objects.all()
-    return render(request, "main/home.html")
-
-
+    return render(request, 'main/home.html', {'quote': quote})
 def landing_page(request):
     if request.user.is_authenticated:
         return redirect("home")
@@ -142,49 +161,57 @@ def search_page(request):
 
 
 def recipes_list(request):
-    recipes = Recipe.objects.all().order_by('title')
+    recipes = list(Recipe.objects.all().order_by('title'))
 
     if request.user.is_authenticated:
         try:
             app_user = AppUser.objects.get(user=request.user)
 
-            # Get user's disease IDs
             try:
                 user_picks = UserPickedDisease.objects.get(user=app_user)
                 picked_disease = [d for d in user_picks.disease.rstrip("]").split("]") if d]
-                #user_disease_ids = app_user.diseases.values_list('id', flat=True)
                 user_disease_ids = Disease.objects.filter(title__in=picked_disease).values_list('id', flat=True)
             except UserPickedDisease.DoesNotExist:
                 user_disease_ids = []
 
-            # Get ingredient IDs to avoid based on user's diseases
-            if user_disease_ids:
-                avoid_ingredient_ids = Disease_Avoid_Food.objects.filter(
-                    disease_id__in=user_disease_ids
-                ).values_list('ingredient_id', flat=True)
-
-            # Exclude recipes that contain any avoided ingredients
-                if avoid_ingredient_ids:
-                    avoided_recipe_ids = Recipe_Ingredients.objects.filter(
-                        ingredient_id__in=avoid_ingredient_ids
-                    ).values_list('recipe_id', flat=True)
-
-                    recipes = recipes.exclude(id__in=avoided_recipe_ids)
-            
-            super_ingredients_ids = Disease_Super_Food.objects.filter(
+            avoid_ingredient_ids = Disease_Avoid_Food.objects.filter(
                 disease_id__in=user_disease_ids
             ).values_list('ingredient_id', flat=True)
 
-            if super_ingredients_ids:
-                super_ingredients_ids = Recipe_Ingredients.objects.filter(
-                ingredient_id__in=user_disease_ids
-            ).values_list('recipe_id', flat=True)
-
+            if avoid_ingredient_ids:
+                avoided_recipe_ids = Recipe_Ingredients.objects.filter(
+                    ingredient_id__in=avoid_ingredient_ids
+                ).values_list('recipe_id', flat=True)
+                recipes = list(Recipe.objects.all().order_by('title').exclude(id__in=avoided_recipe_ids))
 
         except AppUser.DoesNotExist:
             pass
 
-    return render(request, 'recipes/recipes_list.html', {'recipes': recipes})
+    # Build nutrition list — always runs, same size/order as recipes
+    nutrition_list = []
+    for recipe in recipes:
+        recipe_ingredients = Recipe_Ingredients.objects.filter(recipe_id=recipe).select_related('ingredient_id')
+        total_calories = sum(ri.ingredient_id.calories_kcal or 0 for ri in recipe_ingredients)
+        total_protein = sum(ri.ingredient_id.protein_g or 0 for ri in recipe_ingredients)
+        total_carbs = sum(ri.ingredient_id.carbs_g or 0 for ri in recipe_ingredients)
+        total_fiber = sum(ri.ingredient_id.fiber_g or 0 for ri in recipe_ingredients)
+        total_saturated_fat_g = sum(ri.ingredient_id.saturated_fat_g or 0 for ri in recipe_ingredients)
+
+        nutrition_list.append({
+            'calories': round(total_calories, 1) if total_calories else 'N/A',
+            'protein': round(total_protein, 1) if total_protein else 'N/A',
+            'carbs': round(total_carbs, 1) if total_carbs else 'N/A',
+            'fiber': round(total_fiber, 1) if total_carbs else 'N/A',
+            'fats': round(total_saturated_fat_g, 1) if total_carbs else 'N/A',
+
+        })
+ 
+    return render(request, 'recipes/recipes_list.html', {
+        'recipes': recipes,
+        'recipes_with_nutrition': list(zip(recipes, nutrition_list)),
+    })
+
+
 def recipe_detail(request, recipe_id):
     #from django.shortcuts import get_object_or_404
     recipe = get_object_or_404(Recipe, id=recipe_id)
@@ -260,10 +287,61 @@ def selected_recipes(request):
     except UserPickedRecipes.DoesNotExist:
         recipe_list = []
 
-    return render(request, 'recipes/selected_recipes.html', {"recipes": recipe_list})
+
+    nutrition_list = []
+    i = 0
+    for recipe in recipe_list:
+        current_recipe = Recipe.objects.get(title=recipe)
+        recipe_list[i] = current_recipe
+        recipe_ingredients = Recipe_Ingredients.objects.filter(recipe_id=current_recipe.id).select_related('ingredient_id')
+        total_calories = sum(ri.ingredient_id.calories_kcal or 0 for ri in recipe_ingredients)
+        total_protein = sum(ri.ingredient_id.protein_g or 0 for ri in recipe_ingredients)
+        total_carbs = sum(ri.ingredient_id.carbs_g or 0 for ri in recipe_ingredients)
+        total_fiber = sum(ri.ingredient_id.fiber_g or 0 for ri in recipe_ingredients)
+        total_saturated_fat_g = sum(ri.ingredient_id.saturated_fat_g or 0 for ri in recipe_ingredients)
+
+        nutrition_list.append({
+            'calories': round(total_calories, 1) if total_calories else 'N/A',
+            'protein': round(total_protein, 1) if total_protein else 'N/A',
+            'carbs': round(total_carbs, 1) if total_carbs else 'N/A',
+            'fiber': round(total_fiber, 1) if total_carbs else 'N/A',
+            'fats': round(total_saturated_fat_g, 1) if total_carbs else 'N/A',
+
+        })
+        
+        i += 1
+    
+
+    return render(request, 'recipes/selected_recipes.html', {"recipes": recipe_list, "recipes_with_nutrition": list(zip(recipe_list, nutrition_list))})
 
 
+def remove_recipes(request):
+    try:
+        app_user = AppUser.objects.get(user=request.user)
+        
+        user_picks = UserPickedRecipes.objects.get(user=app_user)
+    
+        if user_picks.recipe:
+            recipe_list = user_picks.recipe.rstrip("]").split("]")
+            recipe_list = [r for r in recipe_list if r]  # Remove empty strings
+        else:
+            recipe_list = []
 
+    except AppUser.DoesNotExist:
+        recipe_list = []
+    except UserPickedRecipes.DoesNotExist:
+        recipe_list = []
+
+    data = json.loads(request.body)
+    recipe_title = data.get('recipe_title')
+
+    if recipe_title in recipe_list:
+        recipe_list.remove(recipe_title)
+        
+    user_picks.recipe = "]".join(recipe_list) + "]"
+    
+    user_picks.save()
+    return JsonResponse({'success': True, 'message': f'Removed {recipe_title} from your picks!'})
 
 # Forgot password page
 def forgot_password_page(request):
@@ -386,16 +464,17 @@ def grocery_list(request):
 
     ingredients_amount = {}
 
-    
     for r in recipe_list:
         current_recipe = Recipe.objects.get(title=r)
-        for i in Recipe_Ingredients.objects.all():
-            if i.recipe_id == current_recipe:
-                current_ingredient = i.ingredient_id
-                if current_ingredient.title not in ingredients_amount:
-                    ingredients_amount[current_ingredient.title] = 1
-                else:
-                    ingredients_amount[current_ingredient.title] += 1
+        recipe_ingredient_list = Recipe_Ingredients.objects.filter(recipe_id=current_recipe.id)
+        for i in recipe_ingredient_list:
+            current_ingredient = i.ingredient_id
+            if current_ingredient not in ingredients_amount:
+                ingredients_amount[current_ingredient] = i.amount
+            else:
+                ingredients_amount[current_ingredient] += i.amount
+    
+    
 
     return render(request, 'recipes/grocerylist.html', {"recipes": recipe_list, "ingredients": ingredients_amount})
 
@@ -472,4 +551,642 @@ def selected_disease(request):
 
     return render(request, 'main/selected_disease.html', {"disease": disease_list})
 
+def custom_user_recipe(request):
+    error_info = {"errors": {}}
 
+    if request.method == "POST":
+        title = request.POST.get('title')
+        mealType = request.POST.getlist('type')
+        ingredientList = [i.strip() for i in request.POST.getlist('ingredient-selection') if i.strip()]
+        amountsList = [a.strip() for a in request.POST.getlist('ingredient-amount') if a.strip()]
+        instructions = request.POST.get('instructions')
+
+
+
+        if Recipe.objects.filter(title=title):
+            error_info["errors"]["title"] = "Recipe with that name already exists"
+
+        if not title:
+            error_info["errors"]["title"] = "Title is required"
+        
+        
+        
+        if not mealType:
+            error_info["errors"]["type"] = "Select at least one meal type"
+
+        if not ingredientList:
+            error_info["errors"]["ingredients"] = "Ingredient cannot be empty (input ingredient or remove field)"
+
+        if not amountsList or len(amountsList) != len(ingredientList):
+            error_info["errors"]["amounts"] = "Amount is required for all ingredients"
+
+        if not instructions or instructions.strip() == "":
+            error_info["errors"]["instructions"] = "Cooking instructions are required"
+
+        if not error_info["errors"]:
+            newId = 1
+            while newId in Recipe.objects.values_list("id", flat=True):
+                newId += 1
+
+            mealType = "; ".join(mealType)
+            ingredientListString = ";".join(ingredientList)
+
+            Recipe.objects.create(
+                id = newId,
+                title = title,
+                meal_type = mealType,
+                ingredients = ingredientListString,
+                how_to_cook = instructions
+            )
+
+            for i,a in list(zip(ingredientList, amountsList)):
+                current_ingredient_id = Ingredient.objects.filter(title=i).first().id
+                Recipe_Ingredients.objects.create(
+                    recipe_id = Recipe.objects.get(id=newId),
+                    ingredient_id = Ingredient.objects.get(id=current_ingredient_id),
+                    amount = a
+                )
+            
+            return redirect('recipes_list')
+
+    ingredients = Ingredient.objects.all()
+    return render(request, 'recipes/customrecipe.html', {'ingredients':ingredients, "errors": error_info['errors']})
+
+def weekly_digest(request):
+    if not request.user.is_authenticated:
+        return redirect("login_page")
+    
+    if request.user.is_authenticated:
+        try:
+            app_user = AppUser.objects.get(user=request.user)
+
+            try:
+                user_picks = UserPickedDisease.objects.get(user=app_user)
+                picked_disease = [d for d in user_picks.disease.rstrip("]").split("]") if d]
+                user_disease_ids = Disease.objects.filter(title__in=picked_disease).values_list('id', flat=True)
+            except UserPickedDisease.DoesNotExist:
+                user_disease_ids = []
+
+            avoid_ingredient_ids = Disease_Avoid_Food.objects.filter(
+                disease_id__in=user_disease_ids
+            ).values_list('ingredient_id', flat=True)
+
+            if avoid_ingredient_ids:
+                avoided_recipe_ids = Recipe_Ingredients.objects.filter(
+                    ingredient_id__in=avoid_ingredient_ids
+                ).values_list('recipe_id', flat=True)
+                recipes = list(Recipe.objects.all().order_by('title').exclude(id__in=avoided_recipe_ids))
+
+        except AppUser.DoesNotExist:
+            pass
+    my_recipies = Recipe.objects.filter(id__in=UserPickedRecipes.objects.filter(user=app_user).values_list('recipe', flat=True))
+
+    # Build nutrition list — always runs, same size/order as recipes
+    nutrition_list = []
+    highest_cal = 0
+    lowest_cal = float('inf')
+    highest_cal_recipe = None
+    lowest_cal_recipe = None
+    for recipe in recipes:
+        recipe_ingredients = Recipe_Ingredients.objects.filter(recipe_id=recipe).select_related('ingredient_id')
+        total_calories = sum(ri.ingredient_id.calories_kcal or 0 for ri in recipe_ingredients)
+        total_protein = sum(ri.ingredient_id.protein_g or 0 for ri in recipe_ingredients)
+        total_carbs = sum(ri.ingredient_id.carbs_g or 0 for ri in recipe_ingredients)
+        nutrition_list.append({
+            'calories': round(total_calories, 1) if total_calories else 'N/A',
+            'protein': round(total_protein, 1) if total_protein else 'N/A',
+            'carbs': round(total_carbs, 1) if total_carbs else 'N/A',
+        })
+        if total_calories > highest_cal:
+            highest_cal = total_calories
+            highest_cal_recipe = recipe
+        if total_calories < lowest_cal:
+            lowest_cal = total_calories
+            lowest_cal_recipe = recipe
+        
+    not_Chosen= Recipe.objects.all().exclude(title__in=[r for r in recipes])
+    random_recipe = random.choice(not_Chosen) if not_Chosen else None
+
+
+    ingredient_count = {}
+    for recipe in recipes:
+        recipe_ingredients = Recipe_Ingredients.objects.filter(recipe_id=recipe).select_related('ingredient_id')
+        for ri in recipe_ingredients:
+            ingredient_title = ri.ingredient_id.title
+            if ingredient_title not in ingredient_count:
+                ingredient_count[ingredient_title] = 1
+            else:
+                ingredient_count[ingredient_title] += 1
+
+    # Get most common ingredient
+    most_common_ingredient = max(ingredient_count, key=ingredient_count.get) if ingredient_count else None
+
+    sevenDaysAgo = date.today() - timedelta(days=7)
+    results = DailyLog.objects.all().filter(user=request.user)
+    results = results.filter(date__gte=sevenDaysAgo)
+    sevenDaysAgoLst = [date.today() - timedelta(days=i) for i in range(7)]
+
+    results_json = json.dumps([
+        {
+            'date': str(log.date),
+            'total_calories': log.total_calories,
+            'total_protein': log.total_protein,
+            'total_carbs': log.total_carbs,
+            'total_fats': log.total_fats,
+            'net_calories': log.net_calories,
+        }
+        for log in results
+    ])
+    
+    myWorkouts= WorkoutEntry.objects.filter(daily_log__in=results)
+    mydict = {str(date): 0 for date in sevenDaysAgoLst}
+    for w in myWorkouts:
+        mydict[str(w.daily_log.date)] += 1
+
+
+    workouts_json = json.dumps({str(k): v for k, v in mydict.items()})
+
+
+
+    return render(request, 'recipes/weekly_digest.html', {
+        'recipes': recipes,
+        'recipes_with_nutrition': list(zip(recipes, nutrition_list)),
+        'most_common_ingredient': most_common_ingredient,
+        'highest_cal_recipe': highest_cal_recipe,
+        'not_Chosen': random_recipe,
+        'lowest_cal_recipe': lowest_cal_recipe,
+        'highest_cal': round(highest_cal, 1),
+        'lowest_cal': round(lowest_cal, 1),
+        'results_json': results_json,
+        'workouts_json': workouts_json,
+    })
+
+
+
+
+
+@login_required
+def daily_digest(request):
+    """
+    Display the daily nutrition digest page with personalized meal slots
+    """
+    from recipes.models import Quote, Recipe, AppUser
+    import random
+    
+    # Get random quote
+    quotes = Quote.objects.all()
+    quote = random.choice(list(quotes)) if quotes.exists() else None
+    
+    # Get AppUser instance
+    try:
+        app_user = AppUser.objects.get(user=request.user)
+        meals_per = app_user.meals_per or 3  # Default to 3 meals
+        snacks_per = app_user.snacks_per or 1  # Default to 1 snack
+    except AppUser.DoesNotExist:
+        meals_per = 3
+        snacks_per = 1
+    
+    # Get all recipes from the database
+    # (Since UserPickedRecipes doesn't have a proper relationship, just get all recipes)
+    user_recipe_list = Recipe.objects.all()[:50]  # Limit to 50 for performance
+    
+    context = {
+        'quote': quote,
+        'meal_range': range(meals_per),
+        'snack_range': range(snacks_per) if snacks_per > 0 else None,
+        'user_recipes': user_recipe_list
+    }
+    
+    return render(request, 'recipes/daily_digest.html', context)
+@login_required
+@require_http_methods(["GET"])
+def get_daily_data(request):
+    """
+    API endpoint to get today's daily log data
+    """
+    today = date.today()
+    app_user = AppUser.objects.get(user=request.user)
+    
+    # Get or create today's log
+    daily_log, created = DailyLog.objects.get_or_create(
+        user=request.user,
+        date=today,
+        defaults={'calorie_goal': app_user.calorie_goal or 2000} #gets user set goal or default of 2000
+    )
+    
+    # Get all meals for today
+    meals = list(daily_log.meals.values(
+        'id', 'meal_name', 'calories', 'protein', 'carbs', 'fats', 'logged_at'
+    ))
+    
+    # Get all workouts for today
+    workouts = list(daily_log.workouts.values(
+        'id', 'workout_type', 'calories_burned', 'logged_at'
+    ))
+    
+    return JsonResponse({
+        'success': True,
+        'date': str(today),
+        'total_calories': daily_log.total_calories,
+        'total_protein': daily_log.total_protein,
+        'total_carbs': daily_log.total_carbs,
+        'total_fats': daily_log.total_fats,
+        'total_burned': daily_log.total_burned,
+        'calorie_goal': daily_log.calorie_goal,
+        'net_calories': daily_log.net_calories,
+        'remaining_calories': daily_log.remaining_calories,
+        'meals': meals,
+        'workouts': workouts,
+    })
+
+
+@login_required
+@require_http_methods(["POST"])
+def add_meal(request):
+    """
+    API endpoint to add a meal entry
+    """
+    try:
+        data = json.loads(request.body)
+        today = date.today()
+        app_user = AppUser.objects.get(user=request.user)
+        
+        # Get or create today's log
+        daily_log, created = DailyLog.objects.get_or_create(
+            user=request.user,
+            date=today,
+            defaults={'calorie_goal': app_user.calorie_goal or 2000} #gets user set goal or default of 2000
+    )
+        
+        # Create meal entry
+        meal = MealEntry.objects.create(
+            daily_log=daily_log,
+            meal_name=data.get('meal_name', 'Meal'),
+            calories=float(data.get('calories', 0)),
+            protein=float(data.get('protein', 0)),
+            carbs=float(data.get('carbs', 0)),
+            fats=float(data.get('fats', 0)),
+        )
+        
+        # Update daily totals
+        daily_log.total_calories += meal.calories
+        daily_log.total_protein += meal.protein
+        daily_log.total_carbs += meal.carbs
+        daily_log.total_fats += meal.fats
+        daily_log.save()
+        
+        return JsonResponse({
+            'success': True,
+            'meal_id': meal.id,
+            'total_calories': daily_log.total_calories,
+            'total_protein': daily_log.total_protein,
+            'total_carbs': daily_log.total_carbs,
+            'total_fats': daily_log.total_fats,
+            'net_calories': daily_log.net_calories,
+            'remaining_calories': daily_log.remaining_calories,
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+
+
+@login_required
+@require_http_methods(["POST"])
+def add_workout(request):
+    """
+    API endpoint to add a workout entry
+    """
+    try:
+        data = json.loads(request.body)
+        today = date.today()
+        app_user = AppUser.objects.get(user=request.user)
+        
+        # Get or create today's log
+        daily_log, created = DailyLog.objects.get_or_create(
+            user=request.user,
+            date=today,
+            defaults={'calorie_goal': app_user.calorie_goal or 2000} #gets user set goal or default of 2000
+        )
+        
+        # Create workout entry
+        workout = WorkoutEntry.objects.create(
+            daily_log=daily_log,
+            workout_type=data.get('workout_type', 'other'),
+            calories_burned=float(data.get('calories_burned', 0)),
+        )
+        
+        # Update daily totals
+        daily_log.total_burned += workout.calories_burned
+        daily_log.save()
+        
+        return JsonResponse({
+            'success': True,
+            'workout_id': workout.id,
+            'total_burned': daily_log.total_burned,
+            'net_calories': daily_log.net_calories,
+            'remaining_calories': daily_log.remaining_calories,
+        })
+        
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=400)
+    
+
+
+def recipe_info(request, recipe_id):
+    recipe = Recipe.objects.get(id=recipe_id)
+    recipe_ingredient_list = Recipe_Ingredients.objects.filter(recipe_id=recipe.id)
+    ingredient_list = []
+    instructions = recipe.how_to_cook
+    instruction_list = re.split(r'\d+\.\s', instructions.strip('"'))[1:]
+
+
+    for i in recipe_ingredient_list:
+        ingredient_list.append(i.ingredient_id)
+
+
+        
+    total_calories=0
+    total_protein=0
+    total_carbs=0
+    total_fiber=0
+    total_saturated_fat_g=0
+    Sugar_g = 0
+    cholesterol_mg = 0
+    sodium_mg = 0
+    potassium_mg = 0
+    Iron_mg = 0
+    Calcium_mg = 0
+    Phosphorus_mg = 0
+    magnesium_mg = 0
+    Vitamin_A_ug = 0
+    vitamin_b_mg = 0
+    Vitamin_C_mg = 0
+    Vitamin_D_ug = 0
+    Vitamin_E_mg = 0
+    Vitamin_K_ug = 0
+    Zinc_mg = 0
+    Iodine_ug = 0
+    Selenium_ug = 0
+    Copper_mg = 0
+    Fluoride_mg = 0
+    Chromium_mg = 0
+
+    qSetofingredients = Recipe_Ingredients.objects.filter(recipe_id=recipe.id).select_related('ingredient_id')
+    for i in qSetofingredients:
+        total_calories += i.ingredient_id.calories_kcal or 0
+        total_protein += i.ingredient_id.protein_g or 0
+        total_carbs += i.ingredient_id.carbs_g or 0
+        total_fiber += i.ingredient_id.fiber_g or 0
+        total_saturated_fat_g += i.ingredient_id.saturated_fat_g or 0
+        Sugar_g += i.ingredient_id.Sugar_g or 0
+        cholesterol_mg += i.ingredient_id.cholesterol_mg or 0
+        sodium_mg += i.ingredient_id.sodium_mg or 0
+        potassium_mg += i.ingredient_id.potassium_mg or 0
+        Iron_mg += i.ingredient_id.Iron_mg or 0
+        Calcium_mg += i.ingredient_id.Calcium_mg or 0
+        Phosphorus_mg += i.ingredient_id.Phosphorus_mg or 0
+        magnesium_mg += i.ingredient_id.magnesium_mg or 0
+        Vitamin_A_ug += i.ingredient_id.Vitamin_A_ug or 0
+        vitamin_b_mg += i.ingredient_id.vitamin_b_mg or 0
+        Vitamin_C_mg += i.ingredient_id.Vitamin_C_mg or 0
+        Vitamin_D_ug += i.ingredient_id.Vitamin_D_ug or 0
+        Vitamin_E_mg += i.ingredient_id.Vitamin_E_mg or 0
+        Vitamin_K_ug += i.ingredient_id.Vitamin_K_ug or 0
+        Zinc_mg += i.ingredient_id.Zinc_mg or 0
+        Iodine_ug += i.ingredient_id.Iodine_ug or 0
+        Selenium_ug += i.ingredient_id.Selenium_ug or 0
+        Copper_mg += i.ingredient_id.Copper_mg or 0
+        Fluoride_mg += i.ingredient_id.Fluoride_mg or 0
+        Chromium_mg += i.ingredient_id.Chromium_mg or 0
+
+    dictionaryOfNutritionFacts = {
+        'calories': round(total_calories, 1) if total_calories else 'N/A',
+        'protein': round(total_protein, 1) if total_protein else 'N/A',
+        'carbs': round(total_carbs, 1) if total_carbs else 'N/A',
+        'fiber': round(total_fiber, 1) if total_fiber else 'N/A',
+        'fats': round(total_saturated_fat_g, 1) if total_saturated_fat_g else 'N/A',
+        'Sugar_g': round(Sugar_g, 1) if Sugar_g else 'N/A',
+        'cholesterol_mg': round(cholesterol_mg, 1) if cholesterol_mg else 'N/A',
+        'sodium_mg': round(sodium_mg, 1) if sodium_mg else 'N/A',
+        'potassium_mg': round(potassium_mg, 1) if potassium_mg else 'N/A',
+        'Iron_mg': round(Iron_mg, 1) if Iron_mg else 'N/A',
+        'Calcium_mg': round(Calcium_mg, 1) if Calcium_mg else 'N/A',
+        'Phosphorus_mg': round(Phosphorus_mg, 1) if Phosphorus_mg else 'N/A',
+        'magnesium_mg': round(magnesium_mg, 1) if magnesium_mg else 'N/A',
+        'Vitamin_A_ug': round(Vitamin_A_ug, 1) if Vitamin_A_ug else 'N/A',
+        'vitamin_b_mg': round(vitamin_b_mg, 1) if vitamin_b_mg else 'N/A',
+        'Vitamin_C_mg': round(Vitamin_C_mg, 1) if Vitamin_C_mg else 'N/A',
+        'Vitamin_D_ug': round(Vitamin_D_ug, 1) if Vitamin_D_ug else 'N/A',
+        'Vitamin_E_mg': round(Vitamin_E_mg, 1) if Vitamin_E_mg else 'N/A',
+        'Vitamin_K_ug': round(Vitamin_K_ug, 1) if Vitamin_K_ug else 'N/A',
+        'Zinc_mg': round(Zinc_mg, 1) if Zinc_mg else 'N/A',
+        'Iodine_ug': round(Iodine_ug, 1) if Iodine_ug else 'N/A',
+        'Selenium_ug': round(Selenium_ug, 1) if Selenium_ug else 'N/A',
+        'Copper_mg': round(Copper_mg, 1) if Copper_mg else 'N/A',
+        'Fluoride_mg': round(Fluoride_mg, 1) if Fluoride_mg else 'N/A',
+        'Chromium_mg': round(Chromium_mg, 1) if Chromium_mg else 'N/A'
+    }
+
+    
+    amount_list = []
+
+    for i in recipe_ingredient_list:
+        ingredient_list.append(i.ingredient_id)
+        amount_list.append(i.amount)
+
+
+
+
+
+    return render(request,'recipes/recipe_info.html', {"recipe": recipe, "ingredients": list(zip(ingredient_list, amount_list)), "instructions": instruction_list})    
+@login_required
+def goals_page(request):
+    app_user = AppUser.objects.get(user=request.user)
+    diseases = app_user.diseases.all()
+    active_goals = Goal.objects.filter(user=app_user, is_active=True).order_by("-created_at")
+    completed_goals = Goal.objects.filter(user=app_user, completed=True).order_by('-completed_at')
+    edit_goal = None
+    recent_weight_entries = WeightEntry.objects.filter(user=app_user)[:5]
+
+    default_calories = None
+    default_carbs = None
+    default_protein = None
+    default_fat = None
+
+    high_calories = None
+    high_carbs = None
+    high_protein = None
+    high_fat = None
+
+    # defaults set using disease minimum ranges
+    if diseases.exists():
+        disease = diseases.first()
+        default_calories = disease.low_calories_kcal
+        default_carbs = disease.low_carbs_g
+        default_protein = disease.low_protein_g
+        default_fat = disease.low_saturated_fat_g
+
+        high_calories = disease.high_calories_kcal
+        high_carbs = disease.high_carbs_g
+        high_protein = disease.high_protein_g
+        high_fat = disease.high_saturated_fat_g
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        #marks custom goal as completed
+        if action == "complete_goal":
+            goal_id = request.POST.get("goal_id")
+            try:
+                goal = Goal.objects.get(id=goal_id, user=app_user)
+                goal.completed = True
+                goal.completed_at = timezone.now()
+                goal.is_active = False
+                goal.save()
+                messages.success(request, "Goal marked as completed!")
+            except Goal.DoesNotExist:
+                messages.error(request, "Goal not found.")
+            return redirect('goals_page')
+        # creates a new custom goal
+        elif action == "create_custom_goal":
+            goal_name = request.POST.get("goal_name")
+            goal_description = request.POST.get("goal_description")
+            goal_target_value = request.POST.get("goal_target_value")
+            goal_time_period = request.POST.get("time_period")
+            goal_unit = request.POST.get("unit")
+
+            if goal_name:
+                Goal.objects.create(
+                    user=app_user,
+                    name=goal_name,
+                    description=goal_description,
+                    target_value=goal_target_value if goal_target_value else None,
+                    time_period=goal_time_period if goal_time_period else None,
+                    completed=False,
+                    is_active=True,
+                    unit=goal_unit if goal_unit else None,
+                )
+                messages.success(request, "Custom goal created successfully!")
+            else:
+                messages.error(request, "Goal name is required to create a custom goal.")
+            return redirect('goals_page')
+        elif action == "delete_goal":
+            goal_id = request.POST.get("goal_id")
+
+            try:
+                goal = Goal.objects.get(id=goal_id, user=app_user)
+                goal.delete()
+                messages.success(request, "Goal deleted successfully!")
+            except Goal.DoesNotExist:
+                messages.error(request, "Goal not found.")
+
+            return redirect('goals_page')
+        elif action == "start_edit_goal":
+            goal_id = request.POST.get("goal_id")
+            
+
+            try:
+                edit_goal = Goal.objects.get(id=goal_id, user=app_user, is_active=True)
+            except Goal.DoesNotExist:
+                messages.error(request, "Goal not found.")
+        elif action == "edit_goal":
+            goal_id = request.POST.get("goal_id")
+
+            try:
+                goal = Goal.objects.get(id=goal_id, user=app_user, is_active=True)
+                goal_name = request.POST.get("goal_name")
+                goal_description = request.POST.get("goal_description")
+                goal_target_value = request.POST.get("goal_target_value")
+                goal_time_period = request.POST.get("time_period")
+                goal_unit = request.POST.get("unit")
+
+                if goal_name:
+                    goal.name = goal_name
+                    goal.description = goal_description
+                    goal.target_value = goal_target_value if goal_target_value else None
+                    goal.time_period = goal_time_period if goal_time_period else None
+                    goal.unit = goal_unit if goal_unit else None
+                    goal.save()
+                    messages.success(request, "Goal updated successfully!")
+                else:
+                    messages.error(request, "Goal name is required.")
+
+            except Goal.DoesNotExist:
+                messages.error(request, "Goal not found.")
+
+            return redirect('goals_page')
+        # update nutrition/activity/weight goals
+        else:
+            calorie_goal = request.POST.get("calorie_goal")
+            carb_goal = request.POST.get("carb_goal")
+            protein_goal = request.POST.get("protein_goal")
+            fat_goal = request.POST.get("fat_goal")
+            current_weight = request.POST.get("weight")
+            goal_weight = request.POST.get("goal_weight")
+            activity_level = request.POST.get("activity_level")
+            weight_goal_type = request.POST.get("weight_goal_type")
+
+            app_user.calorie_goal = calorie_goal or default_calories
+            app_user.carb_goal = carb_goal or default_carbs
+            app_user.protein_goal = protein_goal or default_protein
+            app_user.fat_goal = fat_goal or default_fat
+            app_user.goal_weight = goal_weight or app_user.goal_weight
+            app_user.activity_level = activity_level or app_user.activity_level
+            weight_goal_type = (request.POST.get("weight_goal_type") or "").strip()
+            valid_goal_types = {k for k, _ in AppUser.WEIGHT_GOAL_CHOICES}
+
+            if weight_goal_type in valid_goal_types:
+                app_user.weight_goal_type = weight_goal_type
+            elif weight_goal_type == "":
+                app_user.weight_goal_type = None
+                
+            try:
+                if current_weight:
+                    current_weight_value = float(current_weight)
+                    if app_user.weight != current_weight_value:
+                        app_user.weight = current_weight_value
+                        WeightEntry.objects.create(user=app_user, weight=current_weight_value)
+            except ValueError:
+                messages.error(request, "Please enter a valid number for weight.")
+                return redirect('goals_page')
+            app_user.save()
+
+            warnings = []
+
+            try:
+                if app_user.calorie_goal is not None and high_calories is not None and float(app_user.calorie_goal)>float(high_calories):
+                    warnings.append(f"Your calorie goal of {app_user.calorie_goal} kcal exceeds the recommended maximum of {high_calories} kcal for your condition.")
+                if app_user.carb_goal is not None and high_carbs is not None and float(app_user.carb_goal)>float(high_carbs):
+                    warnings.append(f"Your carbohydrate goal of {app_user.carb_goal} g exceeds the recommended maximum of {high_carbs} g for your condition.")
+                if app_user.protein_goal is not None and high_protein is not None and float(app_user.protein_goal)>float(high_protein):
+                    warnings.append(f"Your protein goal of {app_user.protein_goal} g exceeds the recommended maximum of {high_protein} g for your condition.")
+                if app_user.fat_goal is not None and high_fat is not None and float(app_user.fat_goal)>float(high_fat):
+                    warnings.append(f"Your fat goal of {app_user.fat_goal} g exceeds the recommended maximum of {high_fat} g for your condition.")
+            except ValueError:
+                messages.error(request, "Please enter valid numeric values for goals.")
+                return redirect('goals_page')
+            if warnings:
+                for warning in warnings:
+                    messages.warning(request, warning)
+            else:
+                messages.success(request, "Goals updated successfully!")
+            return redirect('goals_page')
+
+       
+    
+    context = {
+        "app_user": app_user,
+        "default_calories": default_calories,
+        "default_carbs": default_carbs,
+        "default_protein": default_protein,
+        "default_fat": default_fat,
+        "high_calories": high_calories,
+        "high_carbs": high_carbs,
+        "high_protein": high_protein,
+        "high_fat": high_fat,
+        "active_goals": active_goals,
+        "completed_goals": completed_goals,
+        "edit_goal": edit_goal,
+        "recent_weight_entries": recent_weight_entries,
+    }
+    return render(request, 'recipes/goals.html', context)

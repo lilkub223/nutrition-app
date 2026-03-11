@@ -1,5 +1,37 @@
 {% extends 'main/base.html' %}
+{% block extra_css %}
+<style>
+.card-body label{
+    color: #b06a24;
+}
 
+.recipe-count {
+    padding: 10px 5px; 
+    font-weight: 450; 
+}
+.filters {
+    display: flex;
+    justify-content: space-between; /* left & right sides */
+    align-items: center;           /* vertical align */
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.filters-left {
+    display: flex;
+    align-items: center;
+    gap: 10px; 
+    padding: 5px 10px;
+
+}
+
+
+.quick-actions button {
+    margin-left: 5px; 
+}
+
+</style>
+{% endblock %}
 {% block title %}Selected Recipes{% endblock %}
 
 {% block content %}
@@ -10,74 +42,50 @@
             <p>Discover delicious and nutritious recipes</p>
         </div>
 
-        <div id="filters">
-            <section id="search-section">
-                <input type="text" id="searchInput" placeholder=" Search recipes..." onkeyup="filterRecipes()">
-            </section>
-            
-            <select class="filter-select" id="mealTypeFilter" onchange="filterRecipes()">
-                <option value="">All Meal Types</option>
-                <option value="vegetarian">vegetarian</option>
-                <option value="gluten-free">gluten-free</option>
-                <option value="vegan">vegan</option>
-                <option value="pescatarian">pescatarian</option>
-                <option value="high-protein">high-protein</option>
+        <div id="filters" class="filters">
+            <div class="filters-left">
+                <input type="text" id="searchInput" placeholder="Search recipes..." onkeyup="filterRecipes()">
+                <span id="recipe-count">Total: {{ recipes|length }} recipes</span>
+            </div>
 
-                /* Add more meal types here */
-                /* Add more meal types here */
-                /* Add more meal types here */
-                /* Add more meal types here */
-                /* Add more meal types here */
-                /* Add more meal types here */
-                /* Add more meal types here */
-                /* Add more meal types here */
-                /* Add more meal types here */
-             
-            </select>
-            <span id="recipe-count">Total: {{ recipes|length }} recipes</span>
+            <div class="quick-actions">
+                <button class="btn btn-success btn-sm" onclick="location.href='/custom_recipe/'">Add My Own Recipes</button>
+                <button class="btn btn-success btn-sm" onclick="location.href='/selected_recipes/'">View My Selected Recipes</button>
+            </div>
         </div>
 
         <div id="table-container">
-            {% if recipes %}
-            <table id="recipesTable">
-                <thead>
-                    <tr>
-                        <th>Recipe Name</th>
-                        <th>Meal Type</th>
-                        <th>Calories (kcal)</th>
-                        <th>Protein (g)</th>
-                        <th>Carbs (g)</th>
-                        <th>Dietary</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for recipe in recipes %}
-                    <tr data-meal-type="{{ recipe.dietary_restrictions|default:"—"|lower    }}">
-                        <td id="recipe-title">{{ recipe.title }}</td>
-                        <td>
-                            <span id="meal-type-badge meal-type-{{ recipe.meal_type|lower|default:'snack' }}">
-                                {{ recipe.meal_type|default:"Snack" }}
-                            </span>
-                        </td>
-                        <td id="nutrition-value">{{ recipe.calories_kcal|default:"N/A" }}</td>
-                        <td id="nutrition-value">{{ recipe.protein_g|default:"N/A" }}</td>
-                        <td id="nutrition-value">{{ recipe.carbs_g|default:"N/A" }}</td>
-                        <td id="dietary-restriction">{{ recipe.dietary_restrictions|default:"—" }}</td>
-                        <td>
-                            <input type="button" value="add" onclick="addtoUserPickedRecipes('{{ recipe.title|escapejs }}')">                        </td>
-                    </tr>
+            {% if recipes_with_nutrition %}
+            <div class="row">
+                    {% for recipe, nutrition in recipes_with_nutrition %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ recipe.title }}</h5>
+                                <p class="card-text">
+                                    <label>Meal Type:</label> {{ recipe.meal_type|default:"Snack" }}<br>
+                                    <label>Calories:</label> {{ nutrition.calories }} kcal<br>
+                                    <label>Protein:</label> {{ nutrition.protein }} g <br>
+                                    <label>Carbs:</label> {{ nutrition.carbs }} g<br>
+                                    <label>Fiber:</label> {{ nutrition.fiber|default:"—" }}<br>
+                                    <label>Fats:</label> {{ nutrition.fats|default:"—" }}<br>
+
+                                </p>
+                                <button class="btn btn-success mt-auto w-100"
+                                        onclick="addtoUserPickedRecipes('{{ recipe.title|escapejs }}')"> Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                     {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <div id="no-results">
-                <h2>No Recipes Found</h2>
-                <p>Try importing some recipes using the management command</p>
+                </div>
+                {% else %}
+                <div id="no-results">
+                    <h2>No Recipes Found</h2>
+                    <p>Try creating your own</p>
+                </div>
+                {% endif %}
             </div>
-            {% endif %}
-            <br>
-            <a href="{% url 'selected_recipes' %}" class="btn btn-success">View Selected Recipes</a>
         </div>
     </div>
 
@@ -132,8 +140,7 @@
             const searchInput = document.getElementById('searchInput').value.toLowerCase();
             const mealTypeFilter = document.getElementById('mealTypeFilter').value.toLowerCase();
             const table = document.getElementById('recipesTable');
-            const rows = table.getElementsByTagName('tr');
-            let visibleCount = 0;
+            const rows = document.getElementsByClassName('recipe-card');           let visibleCount = 0;
 
             for (let i = 1; i < rows.length; i++) {
                 const row = rows[i];
@@ -152,8 +159,7 @@
                     showRow = false;
                 }
 
-                row.style.display = showRow ? '' : 'none';
-                if (showRow) visibleCount++;
+                const rows = document.getElementsByClassName('recipe-card');                if (showRow) visibleCount++;
             }
 
 
