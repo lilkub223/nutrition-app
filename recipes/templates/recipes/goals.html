@@ -1,4 +1,5 @@
 {% extends 'main/base.html' %}
+{% load tz %}
 
 {% block title %}Goals - Eatillegent{% endblock %}
 
@@ -151,10 +152,40 @@
                 <div class="card-body">
 
                     <h5 class="card-title mb-3">Activity and Weight Goals</h5>
+                    {% if app_user.goal_weight and app_user.weight %}
+                    <div class="alert alert-light border mb-3">
+
+                        <div class="d-flex justify-content-between flex-wrap">
+
+                            <div>
+                                <strong>Current Weight:</strong> {{ app_user.weight }} lbs
+                            </div>
+
+                            <div>
+                                <strong>Goal Weight:</strong> {{ app_user.goal_weight }} lbs
+                            </div>
+
+                             <div>
+                                <strong>Goal Type:</strong>
+                                {% if app_user.weight_goal_type %}
+                                    {{ app_user.get_weight_goal_type_display }}
+                                {% else %}
+                                     Not set
+                                {% endif %}
+
+                            </div>
+                        </div>
+
+                     </div>
+
+                {% endif %}
+                <p class="text-muted small mt-2 mb-0">
+                Weight entries are automatically recorded whenever the user updates their current weight.
+                </p>
 
                     <div class="row">
 
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label class="form-label">Current Weight</label>
                             <input
                                 type="number"
@@ -165,7 +196,7 @@
                             >
                         </div>
 
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label class="form-label">Goal Weight</label>
                             <input
                                 type="number"
@@ -176,7 +207,17 @@
                             >
                         </div>
 
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Weight Goal Type</label>
+                            <select class="form-select" name="weight_goal_type">
+                                <option value="">Select goal</option>
+                                <option value="lose" {% if app_user.weight_goal_type == "lose" %}selected{% endif %}>Lose Weight</option>
+                                <option value="gain" {% if app_user.weight_goal_type == "gain" %}selected{% endif %}>Gain Weight</option>
+                                <option value="maintain" {% if app_user.weight_goal_type == "maintain" %}selected{% endif %}>Maintain Weight</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
                             <label class="form-label">Activity Level</label>
                             <select class="form-select" name="activity_level">
                                 <option value="">Select activity level</option>
@@ -306,7 +347,7 @@
                         {% endif %}
 
                         <p class="small text-muted mb-3">
-                            Created: {{ goal.created_at|date:"M d, Y g:i A" }}
+                            Created: {{ goal.created_at|localtime|date:"M d, Y g:i A" }}
                         </p>
 
                         <form method="POST" class="mb-2">
@@ -385,7 +426,7 @@
                         <p class="small text-muted mb-3">
                             Completed:
                             {% if goal.completed_at %}
-                                {{ goal.completed_at|date:"M d, Y g:i A" }}
+                                {{ goal.completed_at|localtime|date:"M d, Y g:i A" }}
                             {% else %}
                                 Not available
                             {% endif %}
@@ -417,11 +458,24 @@
 <!--CHECK TO SEE IF USER HAS REACHED THEIR GOAL WEIGHT-->
 {% if recent_weight_entries %}
     {% with latest=recent_weight_entries.0 %}
-        {% if app_user.goal_weight and latest.weight <= app_user.goal_weight %}
+
+        {% if app_user.goal_weight and app_user.weight_goal_type == "lose" and latest.weight <= app_user.goal_weight %}
             <div class="alert alert-success mt-3">
-                Congratulations! You have reached your goal weight.
+                Congratulations! You reached your weight loss goal.
             </div>
+
+        {% elif app_user.goal_weight and app_user.weight_goal_type == "gain" and latest.weight >= app_user.goal_weight %}
+            <div class="alert alert-success mt-3">
+                Congratulations! You reached your weight gain goal.
+            </div>
+
+        {% elif app_user.goal_weight and app_user.weight_goal_type == "maintain" and latest.weight == app_user.goal_weight %}
+            <div class="alert alert-success mt-3">
+                You are maintaining your goal weight!
+            </div>
+
         {% endif %}
+
     {% endwith %}
 {% endif %}
 
@@ -439,7 +493,7 @@
                     <div>
                         <strong>{{ entry.weight }}</strong> lbs
                     </div>
-                    <small class="text-muted">{{ entry.logged_at|date:"M d, Y g:i A" }}</small>
+                    <small class="text-muted">{{ entry.logged_at|localtime|date:"M d, Y g:i A" }}</small>
                 </div>
                 {% endfor %}
             </div>

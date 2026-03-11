@@ -906,6 +906,7 @@ def goals_page(request):
             current_weight = request.POST.get("weight")
             goal_weight = request.POST.get("goal_weight")
             activity_level = request.POST.get("activity_level")
+            weight_goal_type = request.POST.get("weight_goal_type")
 
             app_user.calorie_goal = calorie_goal or default_calories
             app_user.carb_goal = carb_goal or default_carbs
@@ -913,6 +914,14 @@ def goals_page(request):
             app_user.fat_goal = fat_goal or default_fat
             app_user.goal_weight = goal_weight or app_user.goal_weight
             app_user.activity_level = activity_level or app_user.activity_level
+            weight_goal_type = (request.POST.get("weight_goal_type") or "").strip()
+            valid_goal_types = {k for k, _ in AppUser.WEIGHT_GOAL_CHOICES}
+
+            if weight_goal_type in valid_goal_types:
+                app_user.weight_goal_type = weight_goal_type
+            elif weight_goal_type == "":
+                app_user.weight_goal_type = None
+                
             try:
                 if current_weight:
                     current_weight_value = float(current_weight)
