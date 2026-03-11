@@ -47,40 +47,40 @@
         <p id="recipe-count">Showing: {{ recipes|length }} recipes</p>
     </div>
 
-    <div id="recipe-container">
-        {% for recipe in recipes %}
-        <div class="recipe-card mb-4 p-3 border rounded shadow-sm bg-white">
-            <div class="row align-items-center">
-                <div class="col-8 col-md-9">
-                    <a href="{% url 'recipe_detail' recipe.id %}" class="text-dark text-decoration-none">
-                        <h3 class="recipe-title">{{ recipe.title }}</h3>
-                    </a>
-                    <p class = "small mb-1"><strong>Meal Type:</strong> {{recipe.meal_type|default:"Snack"}}</p>
-                    <p><strong>Calories:</strong> {{recipe.calories_kcal|default:"N/A"}} kcal</p>
-                    <p><strong>Protein:</strong> {{ recipe.protein_g|default:"N/A"}} g</p>
-                    <p><strong>Carbs:</strong> {{recipe.carbs_g|default:"N/A"}} g</p>
-                    <p><strong>Fiber:</strong> {{recipe.fiber_g|default:"N/A"}} g</p>
-                    <p><strong>Sugar:</strong> {{recipe.sugar_g|default:"N/A"}} g</p>
-                    <p><strong>Sodium:</strong> {{recipe.sodium_mg|default:"N/A"}} mg</p>
-                    <hr>
+         <div id="table-container">
+            {% if recipes_with_nutrition %}
+            <div class="row">
+                    {% for recipe, nutrition in recipes_with_nutrition %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ recipe.title }}</h5>
+                                <p class="card-text">
+                                    <label>Meal Type:</label> {{ recipe.meal_type|default:"Snack" }}<br>
+                                    <label>Calories:</label> {{ nutrition.calories }} kcal<br>
+                                    <label>Protein:</label> {{ nutrition.protein }} g <br>
+                                    <label>Carbs:</label> {{ nutrition.carbs }} g<br>
+                                    <label>Fiber:</label> {{ nutrition.fiber|default:"—" }}<br>
+                                    <label>Fats:</label> {{ nutrition.fats|default:"—" }}<br>
+
+                                </p>
+                                <button class="btn btn-success mt-auto w-100"
+                                        onclick="addtoUserPickedRecipes('{{ recipe.title|escapejs }}')"> Add
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
                 </div>
-                <div class="col-4 col-md-3 text-end">
-                    <button type="button" 
-                        id="add-btn-{{ recipe.id }}"
-                        class="btn btn-primary btn-sm mt-2" 
-                        onclick="addtoUserPickedRecipes('{{ recipe.title|escapejs }}')">
-                        Add Recipe
-                    </button>
+                {% else %}
+                <div id="no-results">
+                    <h2>No Recipes Found</h2>
+                    <p>Try creating your own</p>
                 </div>
+                {% endif %}
             </div>
         </div>
-        {% empty %}
-        <h2>No Recipes Found</h2>
-        {% endfor %}
-        <br>
-    <a href="{% url 'selected_recipes' %}" class="btn btn-success">View Selected Recipes</a>
-    </div>
-</div>
+    </div
 <script>
     // Helper function to get CSRF token from cookies
     // Django stores CSRF token in a cookie that we need to read
