@@ -218,3 +218,4 @@ __marimo__/
 # Migration cache
 recipes/migrations/__pycache__/
 nutrition_project/__pycache__/
+nutrition_project/__pycache__/wsgi.cpython-311.pyc

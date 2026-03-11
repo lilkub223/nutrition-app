@@ -22,16 +22,24 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.http import require_http_methods
 from datetime import date, timedelta
 from recipes.models import DailyLog, MealEntry, WorkoutEntry
+from recipes.models import Disease, AppUser, Disease_Avoid_Food, Ingredient, Recipe_Ingredients, UserPickedRecipes, Disease_Super_Food
+from recipes.models import Quote
+import random
 
-# Create your views here.
 def home(request):
-    if not request.user.is_authenticated:
-        return redirect("login_page")
+    quote = None
+    if request.user.is_authenticated:
+        # Get random quote from database
+        quotes = Quote.objects.all()
+        if quotes.exists():
+            quote = random.choice(list(quotes))
+        else:
+            # Default quote if none in database
+            quote = type('obj', (object,), {
+                'quote': 'Your health is your wealth. Invest in it daily.',
+            })
     
-    #diseases = Disease.objects.all()
-    return render(request, "main/home.html")
-
-
+    return render(request, 'main/home.html', {'quote': quote})
 def landing_page(request):
     if request.user.is_authenticated:
         return redirect("home")
@@ -726,23 +734,43 @@ def weekly_digest(request):
         'workouts_json': workouts_json,
     })
 
-@login_required
-def daily_digest(request):
-    """
-    Display the daily nutrition digest page
-    """
-    return render(request, 'recipes/daily_digest.html')
+
 
 
 
 @login_required
 def daily_digest(request):
     """
-    Display the daily nutrition digest page
+    Display the daily nutrition digest page with personalized meal slots
     """
-    return render(request, 'recipes/daily_digest.html')
-
-
+    from recipes.models import Quote, Recipe, AppUser
+    import random
+    
+    # Get random quote
+    quotes = Quote.objects.all()
+    quote = random.choice(list(quotes)) if quotes.exists() else None
+    
+    # Get AppUser instance
+    try:
+        app_user = AppUser.objects.get(user=request.user)
+        meals_per = app_user.meals_per or 3  # Default to 3 meals
+        snacks_per = app_user.snacks_per or 1  # Default to 1 snack
+    except AppUser.DoesNotExist:
+        meals_per = 3
+        snacks_per = 1
+    
+    # Get all recipes from the database
+    # (Since UserPickedRecipes doesn't have a proper relationship, just get all recipes)
+    user_recipe_list = Recipe.objects.all()[:50]  # Limit to 50 for performance
+    
+    context = {
+        'quote': quote,
+        'meal_range': range(meals_per),
+        'snack_range': range(snacks_per) if snacks_per > 0 else None,
+        'user_recipes': user_recipe_list
+    }
+    
+    return render(request, 'recipes/daily_digest.html', context)
 @login_required
 @require_http_methods(["GET"])
 def get_daily_data(request):
