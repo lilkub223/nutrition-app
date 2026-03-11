@@ -219,3 +219,6 @@ __marimo__/
 recipes/migrations/__pycache__/
 nutrition_project/__pycache__/
 nutrition_project/__pycache__/wsgi.cpython-311.pyc
+nutrition_project/__pycache__/settings.cpython-311.pyc
+nutrition_project/__pycache__/urls.cpython-311.pyc
+nutrition_project/__pycache__/wsgi.cpython-311.pyc
