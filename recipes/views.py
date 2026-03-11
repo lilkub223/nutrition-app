@@ -340,8 +340,9 @@ def remove_recipes(request):
 
     if recipe_title in recipe_list:
         recipe_list.remove(recipe_title)
-    
+        
     user_picks.recipe = "]".join(recipe_list) + "]"
+    
     user_picks.save()
     return JsonResponse({'success': True, 'message': f'Removed {recipe_title} from your picks!'})
 
@@ -850,8 +851,14 @@ def recipe_info(request, recipe_id):
     instructions = recipe.how_to_cook
     instruction_list = re.split(r'\d+\.\s', instructions.strip('"'))[1:]
 
+    amount_list = []
+
     for i in recipe_ingredient_list:
         ingredient_list.append(i.ingredient_id)
-    
+        amount_list.append(i.amount)
 
-    return render(request,'recipes/recipe_info.html', {"recipe": recipe, "ingredients": ingredient_list, "instructions": instruction_list})
+
+
+
+
+    return render(request,'recipes/recipe_info.html', {"recipe": recipe, "ingredients": list(zip(ingredient_list, amount_list)), "instructions": instruction_list})
