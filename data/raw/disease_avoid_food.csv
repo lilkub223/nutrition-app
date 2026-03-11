@@ -1,4 +1,4 @@
-disease,ingredients,disease_ingrediant_id
+disease_id,ingredient_id,disease_ingredient_id
 1,155,1
 1,130,2
 1,7,3
