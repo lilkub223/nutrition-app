@@ -344,3 +344,13 @@ class Goal(models.Model):
     def __str__(self):
         return f"{self.name} ({self.user.user.username})"
  
+class WeightEntry(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name="weight_entries")
+    weight = models.FloatField()
+    logged_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-logged_at']
+
+    def __str__(self):
+        return f"{self.user.user.username} - {self.weight}"
