@@ -326,3 +326,21 @@ class UserPickedDisease(models.Model):
         return f"{self.user.user.email} - {disease_preview}"
 
     disease_ingredient_id = models.AutoField(primary_key=True)
+
+
+class Goal(models.Model):
+    user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
+    target_value = models.FloatField(blank=True, null=True)
+    time_period = models.CharField(max_length=20, blank=True, null=True) # for weekly or daily
+    completed = models.BooleanField(default=False)
+    unit = models.CharField(max_length=50, blank=True, null=True) #calories, grams, etc.
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
+
+
+    def __str__(self):
+        return f"{self.name} ({self.user.user.username})"
+ 
