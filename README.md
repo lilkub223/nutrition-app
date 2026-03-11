@@ -19,12 +19,12 @@ import recipe ingredients table
 docker-compose exec web python manage.py import_recipe_ingredients "data/raw/recipe_ingredients.csv"
 
 
-python manage.py import_recipes "data/raw/recipes.csv"
-python manage.py import_diseases "data/raw/diseases.csv"
-python manage.py import_ingredients "data/raw/ingredients.csv"
- python manage.py import_recipe_ingredients "data/raw/recipe_ingredients.csv"
-python manage.py import_disease_avoid_food "data/raw/disease_avoid_food.csv"
-python manage.py import_disease_super_food "data/raw/disease_super_food.csv"
+docker-compose exec web python manage.py import_recipes "data/raw/recipes.csv"
+docker-compose exec web python manage.py import_diseases "data/raw/diseases.csv"
+docker-compose exec web python manage.py import_ingredients "data/raw/ingredients.csv"
+docker-compose exec web python manage.py import_recipe_ingredients "data/raw/recipe_ingredients.csv"
+docker-compose exec web python manage.py import_disease_avoid_food "data/raw/disease_avoid_food.csv"
+docker-compose exec web python manage.py import_disease_super_food "data/raw/disease_super_food.csv"
 
 from django.contrib.auth.models import User
 from recipes.models import DailyLog, MealEntry, WorkoutEntry
