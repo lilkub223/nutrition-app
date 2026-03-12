@@ -347,6 +347,33 @@ class UserPickedDisease(models.Model):
     disease_ingredient_id = models.AutoField(primary_key=True)
 
 
+class Quote(models.Model):
+     id = models.IntegerField(primary_key=True)
+     quote = models.TextField()
+     def __str__(self):
+          return self.quote[:50]  # returns the first 50 characters of the quote for display purposes
+     
+class DietaryRestriction(models.Model):
+     id=models.IntegerField(primary_key=True)
+     title=models.CharField(max_length=255)
+
+     def __str__(self):
+            return self.title
+     
+class Dietary_Restriction_Ingredient(models.Model):
+     dietary_restriction=models.ForeignKey(DietaryRestriction, null=True, on_delete=models.CASCADE)
+     ingredient=models.ForeignKey(Ingredient, null=True, on_delete=models.CASCADE)
+
+     def __str__(self):
+          return f"{self.dietary_restriction.title} - {self.ingredient.title}"
+     
+class Dietary_Restriction_Recipe(models.Model):
+        dietary_restriction=models.ForeignKey(DietaryRestriction, null=True, on_delete=models.CASCADE)
+        recipe=models.ForeignKey(Recipe, null=True, on_delete=models.CASCADE)
+    
+        def __str__(self):
+            return f"{self.dietary_restriction.title} - {self.recipe.title}"
+
 class Goal(models.Model):
     user = models.ForeignKey(AppUser, on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
@@ -362,7 +389,7 @@ class Goal(models.Model):
 
     def __str__(self):
         return f"{self.name} ({self.user.user.username})"
- 
+    
 class WeightEntry(models.Model):
     user = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name="weight_entries")
     weight = models.FloatField()
@@ -373,10 +400,3 @@ class WeightEntry(models.Model):
 
     def __str__(self):
         return f"{self.user.user.username} - {self.weight}"
-    
-class Quote(models.Model):
-     id = models.IntegerField(primary_key=True)
-     quote = models.TextField()
-     def __str__(self):
-          return self.quote[:50]  # returns the first 50 characters of the quote for display purposes
- 
