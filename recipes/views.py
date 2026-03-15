@@ -1004,7 +1004,7 @@ def goals_page(request):
     app_user = AppUser.objects.get(user=request.user)
     diseases = app_user.diseases.all()
     active_goals = Goal.objects.filter(user=app_user, is_active=True).order_by("-created_at")
-    completed_goals = Goal.objects.filter(user=app_user, completed=True).order_by('-completed_at')
+    completed_goals = Goal.objects.filter(user=app_user, completed=True, is_active=False).order_by('-completed_at')
     edit_goal = None
     recent_weight_entries = WeightEntry.objects.filter(user=app_user)[:5]
 
@@ -1018,18 +1018,75 @@ def goals_page(request):
     high_protein = None
     high_fat = None
 
-    # defaults set using disease minimum ranges
+    # determines reccomennded ranges based on all the selected diseases
     if diseases.exists():
-        disease = diseases.first()
-        default_calories = disease.low_calories_kcal
-        default_carbs = disease.low_carbs_g
-        default_protein = disease.low_protein_g
-        default_fat = disease.low_saturated_fat_g
+        #gets low vals for reccommended ranges
+        low_calories_values = [d.low_calories_kcal for d in diseases if d.low_calories_kcal is not None]
+        low_carbs_values = [d.low_carbs_g for d in diseases if d.low_carbs_g is not None]
+        low_protein_values = [d.low_protein_g for d in diseases if d.low_protein_g is not None]
+        low_fat_values = [d.low_saturated_fat_g for d in diseases if d.low_saturated_fat_g is not None]
 
-        high_calories = disease.high_calories_kcal
-        high_carbs = disease.high_carbs_g
-        high_protein = disease.high_protein_g
-        high_fat = disease.high_saturated_fat_g
+        #gets high vals for reccommended ranges
+        high_calories_values = [d.high_calories_kcal for d in diseases if d.high_calories_kcal is not None]
+        high_carbs_values = [d.high_carbs_g for d in diseases if d.high_carbs_g is not None]
+        high_protein_values = [d.high_protein_g for d in diseases if d.high_protein_g is not None]
+        high_fat_values = [d.high_saturated_fat_g for d in diseases if d.high_saturated_fat_g is not None]
+
+        #calculates the overlap range for nutritional values based on the selected diseases
+        overlap_low_calories = max(low_calories_values) if low_calories_values else None
+        overlap_low_carbs = max(low_carbs_values) if low_carbs_values else None
+        overlap_low_protein = max(low_protein_values) if low_protein_values else None
+        overlap_low_fat = max(low_fat_values) if low_fat_values else None
+
+        overlap_high_calories = min(high_calories_values) if high_calories_values else None
+        overlap_high_carbs = min(high_carbs_values) if high_carbs_values else None
+        overlap_high_protein = min(high_protein_values) if high_protein_values else None
+        overlap_high_fat = min(high_fat_values) if high_fat_values else None
+
+        #calculates average ranges based on the selected diseases if the overlap ranges show conflicting values (ex: overlap_low_calories is higher than overlap_high_calories)
+        avg_low_calories = sum(low_calories_values) / len(low_calories_values) if low_calories_values else None
+        avg_low_carbs = sum(low_carbs_values) / len(low_carbs_values) if low_carbs_values else None
+        avg_low_protein = sum(low_protein_values) / len(low_protein_values) if low_protein_values else None
+        avg_low_fat = sum(low_fat_values) / len(low_fat_values) if low_fat_values else None
+
+        avg_high_calories = sum(high_calories_values) / len(high_calories_values) if high_calories_values else None
+        avg_high_carbs = sum(high_carbs_values) / len(high_carbs_values) if high_carbs_values else None
+        avg_high_protein = sum(high_protein_values) / len(high_protein_values) if high_protein_values else None
+        avg_high_fat = sum(high_fat_values) / len(high_fat_values) if high_fat_values else None
+
+        #uses the overlap range if it is valid, otherwise the average range is used as an alternative recommendation
+        if overlap_low_calories is not None and overlap_high_calories is not None and overlap_low_calories <= overlap_high_calories:
+            default_calories = overlap_low_calories
+            high_calories = overlap_high_calories
+        else:
+            default_calories = avg_low_calories
+            high_calories = avg_high_calories
+
+        if overlap_low_carbs is not None and overlap_high_carbs is not None and overlap_low_carbs <= overlap_high_carbs:
+            default_carbs = overlap_low_carbs
+            high_carbs = overlap_high_carbs
+        else:
+            default_carbs = avg_low_carbs
+            high_carbs = avg_high_carbs
+
+        if overlap_low_protein is not None and overlap_high_protein is not None and overlap_low_protein <= overlap_high_protein:
+            default_protein = overlap_low_protein
+            high_protein = overlap_high_protein
+        else:
+            default_protein = avg_low_protein
+            high_protein = avg_high_protein
+        
+        if overlap_low_fat is not None and overlap_high_fat is not None and overlap_low_fat <= overlap_high_fat:
+            default_fat = overlap_low_fat
+            high_fat = overlap_high_fat
+        else:
+            default_fat = avg_low_fat
+            high_fat = avg_high_fat
+
+
+
+
+
 
     if request.method == "POST":
         action = request.POST.get("action")
@@ -1047,6 +1104,19 @@ def goals_page(request):
             except Goal.DoesNotExist:
                 messages.error(request, "Goal not found.")
             return redirect('goals_page')
+        elif action == "reactivate_goal":
+            goal_id = request.POST.get("goal_id")
+            try:
+                goal = Goal.objects.get(id=goal_id, user=app_user)
+                goal.completed = False
+                goal.completed_at = None
+                goal.is_active = True
+                goal.save()
+                messages.success(request, "Goal reactivated!")
+            except Goal.DoesNotExist:
+                messages.error(request, "Goal not found.")
+            return redirect('goals_page')
+        
         # creates a new custom goal
         elif action == "create_custom_goal":
             goal_name = request.POST.get("goal_name")
@@ -1079,6 +1149,14 @@ def goals_page(request):
                 messages.success(request, "Goal deleted successfully!")
             except Goal.DoesNotExist:
                 messages.error(request, "Goal not found.")
+        elif action == "delete_weight_entry":
+            entry_id = request.POST.get("entry_id")
+            try:
+                entry = WeightEntry.objects.get(id=entry_id, user=app_user)
+                entry.delete()
+                messages.success(request, "Weight entry deleted successfully!")
+            except WeightEntry.DoesNotExist:
+                messages.error(request, "Weight entry not found.")
 
             return redirect('goals_page')
         elif action == "start_edit_goal":
@@ -1115,6 +1193,7 @@ def goals_page(request):
                 messages.error(request, "Goal not found.")
 
             return redirect('goals_page')
+        
         # update nutrition/activity/weight goals
         else:
             calorie_goal = request.POST.get("calorie_goal")
@@ -1143,7 +1222,10 @@ def goals_page(request):
             try:
                 if current_weight:
                     current_weight_value = float(current_weight)
-                    if app_user.weight != current_weight_value:
+                    #checks if user has previous weight entries
+                    has_prev_entry = WeightEntry.objects.filter(user=app_user).exists()
+                    #record weight entry if it is their first one or if their weight changed
+                    if not has_prev_entry or app_user.weight != current_weight_value:
                         app_user.weight = current_weight_value
                         WeightEntry.objects.create(user=app_user, weight=current_weight_value)
             except ValueError:
