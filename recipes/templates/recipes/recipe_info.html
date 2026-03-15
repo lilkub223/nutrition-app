@@ -20,7 +20,7 @@
 
 
         <h3>Nutrient Info:</h3>
-        <p>(Info displayed is based on 1 serving)</p>
+        <p>( Info displayed is based on {{ multi }} serving(s) )</p>
         <ul>
             {% for n,a in nutrition.items %}
             <li>{{ n }} - {{ a }}</li>

@@ -191,14 +191,32 @@ def recipes_list(request):
     # Build nutrition list — always runs, same size/order as recipes
     nutrition_list = []
     for recipe in recipes:
-        amount = desired_serving if desired_serving else recipe.serving
-        scale = recipe.scale_ingredients(amount)
+        try:
+            #amount = desired_serving if desired_serving else recipe.serving
+            amount = float(desired_serving) if desired_serving else 1.0
+        except (ValueError, TypeError):
+            amount = 1.0
+        #scale = recipe.scale_ingredients(amount)
+
         recipe_ingredients = Recipe_Ingredients.objects.filter(recipe_id=recipe).select_related('ingredient_id')
-        total_calories = sum((ri.ingredient_id.calories_kcal or 0) * scale for ri in recipe_ingredients)
-        total_protein = sum((ri.ingredient_id.protein_g or 0) * scale for ri in recipe_ingredients)
-        total_carbs = sum((ri.ingredient_id.carbs_g or 0) * scale for ri in recipe_ingredients)
-        total_fiber = sum((ri.ingredient_id.fiber_g or 0) * scale for ri in recipe_ingredients)
-        total_saturated_fat_g = sum((ri.ingredient_id.saturated_fat_g or 0) * scale for ri in recipe_ingredients)
+        total_calories = 0
+        total_protein = 0
+        total_carbs = 0
+        total_fiber = 0
+        total_saturated_fat_g = 0
+        
+        for ri in recipe_ingredients:
+            factor = float(ri.amount or 0) * amount
+            total_calories += (ri.ingredient_id.calories_kcal or 0) * factor
+            total_protein += (ri.ingredient_id.protein_g or 0) * factor
+            total_carbs += (ri.ingredient_id.carbs_g or 0) * factor
+            total_fiber += (ri.ingredient_id.fiber_g or 0) * factor
+            total_saturated_fat_g += (ri.ingredient_id.saturated_fat_g or 0) * factor
+        # total_calories = sum((ri.ingredient_id.calories_kcal or 0) * scale for ri in recipe_ingredients)
+        # total_protein = sum((ri.ingredient_id.protein_g or 0) * scale for ri in recipe_ingredients)
+        # total_carbs = sum((ri.ingredient_id.carbs_g or 0) * scale for ri in recipe_ingredients)
+        # total_fiber = sum((ri.ingredient_id.fiber_g or 0) * scale for ri in recipe_ingredients)
+        # total_saturated_fat_g = sum((ri.ingredient_id.saturated_fat_g or 0) * scale for ri in recipe_ingredients)
 
         nutrition_list.append({
             'calories': round(total_calories, 1) if total_calories else 'N/A',
@@ -248,23 +266,27 @@ def add_to_picked_recipes(request):
             if not recipe_title:
                 return JsonResponse({'success': False, 'error': 'Recipe title is required'})
             
-            # Get or create AppUser for the logged-in user
-            # This links Django's User to your custom AppUser model
+    
+            # This links Django's User to your custom AppUser model when logged in
             app_user, created = AppUser.objects.get_or_create(user=request.user)
             
-            # Get or create UserPickedRecipes for this user
-            # Each user has one UserPickedRecipes record with all their picks
+            # Get or create UserPickedRecipes for this user, records their picks
             user_picks, created = UserPickedRecipes.objects.get_or_create(user=app_user)
             
-            # Parse the existing recipe list from the TextField
-            # Format is: "Recipe1]Recipe2]Recipe3]"
+            # Parse the existing recipe list
             if user_picks.recipe:
                 recipe_list = user_picks.recipe.rstrip("]").split("]")
                 recipe_list = [r for r in recipe_list if r]  # Remove empty strings
-                exists = any(entry.split(":")[0] == recipe_title for entry in recipe_list)
+                #exists = any(entry.split(":")[0] == recipe_title for entry in recipe_list)
+            
             else:
                 recipe_list = []
-                exists = False
+            exists = False
+            for i, entry in enumerate(recipe_list):
+                if entry.split(":")[0] == recipe_title:
+                    recipe_list[i]= f"{recipe_title}:{requested_servings}"
+                    exists= True
+                    break
 
             if not exists:
                 new_serving = f"{recipe_title}:{requested_servings}"
@@ -275,14 +297,16 @@ def add_to_picked_recipes(request):
 
             
             #  if recipe is already in the user's picks
-            if recipe_title not in recipe_list:
-                # Add  new recipe
-                recipe_list.append(recipe_title)
-                # Save to database with ] delimiter
-                user_picks.recipe = "]".join(recipe_list) + "]"
-                user_picks.save()
+            # if recipe_title not in recipe_list:
+            #     # Add  new recipe
+            #     recipe_list.append(recipe_title)
+            #     # Save to database with ] delimiter
+            #     user_picks.recipe = "]".join(recipe_list) + "]"
+            #     user_picks.save()
                 return JsonResponse({'success': True, 'message': f'Added {recipe_title}. Total servings: {user_servings[recipe_title]} to your picks!'})
             else:
+                user_picks.recipe = "]".join(recipe_list) + "]"
+                user_picks.save()
                 return JsonResponse({'success': False, 'error': f'{recipe_title} is already in your picks'})
                 
         except json.JSONDecodeError:
@@ -313,7 +337,7 @@ def selected_recipes(request):
 
     final_recipe = []
     nutrition_list = []
-    #i = 0
+    
     for entry in recipe_entries:
         try:
             if ":" in entry:
@@ -325,22 +349,36 @@ def selected_recipes(request):
 
             current_recipe = Recipe.objects.get(title=title)
             
-            # Get base nutrition (for 1 serving)
-            recipe_ingredients = Recipe_Ingredients.objects.filter(recipe_id=current_recipe.id).select_related('ingredient_id')
+            # Get base nutrition for selected serving size
+            recipe_ingredients = Recipe_Ingredients.objects.filter(recipe_id=current_recipe).select_related('ingredient_id')
+            base_cal = 0
+            base_prot = 0
+            base_carb = 0
+            base_fiber = 0
+            base_fat = 0
+        
+            for ri in recipe_ingredients:
+                factor = float(ri.amount or 0) * servings
+                base_cal += (ri.ingredient_id.calories_kcal or 0) * factor
+                base_prot += (ri.ingredient_id.protein_g or 0) * factor
+                base_carb += (ri.ingredient_id.carbs_g or 0) * factor
+                base_fiber += (ri.ingredient_id.fiber_g or 0) * factor
+                base_fat += (ri.ingredient_id.saturated_fat_g or 0) * factor
+            # recipe_ingredients = Recipe_Ingredients.objects.filter(recipe_id=current_recipe.id).select_related('ingredient_id')
             
-            base_cal = sum(ri.ingredient_id.calories_kcal or 0 for ri in recipe_ingredients)
-            base_prot = sum(ri.ingredient_id.protein_g or 0 for ri in recipe_ingredients)
-            base_carb = sum(ri.ingredient_id.carbs_g or 0 for ri in recipe_ingredients)
-            base_fiber = sum(ri.ingredient_id.fiber_g or 0 for ri in recipe_ingredients)
-            base_fat = sum(ri.ingredient_id.saturated_fat_g or 0 for ri in recipe_ingredients)
+            # base_cal = sum(ri.ingredient_id.calories_kcal or 0 for ri in recipe_ingredients)
+            # base_prot = sum(ri.ingredient_id.protein_g or 0 for ri in recipe_ingredients)
+            # base_carb = sum(ri.ingredient_id.carbs_g or 0 for ri in recipe_ingredients)
+            # base_fiber = sum(ri.ingredient_id.fiber_g or 0 for ri in recipe_ingredients)
+            # base_fat = sum(ri.ingredient_id.saturated_fat_g or 0 for ri in recipe_ingredients)
 
-            # MULTIPLY by the saved servings
+            # Multiplies by the saved servings
             nutrition_list.append({
-                'calories': round(base_cal * servings, 1),
-                'protein': round(base_prot * servings, 1),
-                'carbs': round(base_carb * servings, 1),
-                'fiber': round(base_fiber * servings, 1),
-                'fats': round(base_fat * servings, 1),
+                'calories': round(base_cal, 1),
+                'protein': round(base_prot, 1),
+                'carbs': round(base_carb, 1),
+                'fiber': round(base_fiber, 1),
+                'fats': round(base_fat, 1),
                 'applied_servings': servings # Pass this to show on the page
             })
             
@@ -356,30 +394,43 @@ def selected_recipes(request):
 def remove_recipes(request):
     try:
         app_user = AppUser.objects.get(user=request.user)
-        
         user_picks = UserPickedRecipes.objects.get(user=app_user)
-    
+
+        data = json.loads(request.body)
+        recipe_title = data.get('recipe_title')
+
         if user_picks.recipe:
-            recipe_list = user_picks.recipe.rstrip("]").split("]")
-            recipe_list = [r for r in recipe_list if r]  # Remove empty strings
-        else:
-            recipe_list = []
+            recipe_list = [r for r in user_picks.recipe.rstrip("]").split("]") if r]
 
-    except AppUser.DoesNotExist:
-        recipe_list = []
-    except UserPickedRecipes.DoesNotExist:
-        recipe_list = []
-
-    data = json.loads(request.body)
-    recipe_title = data.get('recipe_title')
-
-    if recipe_title in recipe_list:
-        recipe_list.remove(recipe_title)
+            # Keeps everything except the recipe matching the title
+            recipe_list = [r for r in recipe_list if r.split(":")[0] != recipe_title]
         
-    user_picks.recipe = "]".join(recipe_list) + "]"
+            user_picks.recipe = "]".join(recipe_list) + "]" if recipe_list else ""
+            user_picks.save()
     
-    user_picks.save()
-    return JsonResponse({'success': True, 'message': f'Removed {recipe_title} from your picks!'})
+        return JsonResponse({'success': True, 'message': f'Removed {recipe_title} from your picks!'})
+    
+    #     if user_picks.recipe:
+    #         recipe_list = user_picks.recipe.rstrip("]").split("]")
+    #         recipe_list = [r for r in recipe_list if r]  # Remove empty strings
+    #     else:
+    #         recipe_list = []
+
+    except (AppUser.DoesNotExist,UserPickedRecipes.DoesNotExist):
+        return JsonResponse({'success': False, 'error': 'User profile or picks not found'})
+    except Exception as e :
+        return JsonResponse({'success': False, 'error': str(e)})
+
+    # data = json.loads(request.body)
+    # recipe_title = data.get('recipe_title')
+
+    # if recipe_title in recipe_list:
+    #     recipe_list.remove(recipe_title)
+        
+    # user_picks.recipe = "]".join(recipe_list) + "]"
+    
+    # user_picks.save()
+    # return JsonResponse({'success': True, 'message': f'Removed {recipe_title} from your picks!'})
 
 # Forgot password page
 def forgot_password_page(request):
@@ -947,11 +998,25 @@ def add_workout(request):
 def recipe_info(request, recipe_id):
     recipe = Recipe.objects.get(id=recipe_id)
     recipe_ingredient_list = Recipe_Ingredients.objects.filter(recipe_id=recipe.id).select_related('ingredient_id')
-    multi = request.GET.get('servings', 1)
-    try:
-        servings = float(multi)
-    except ValueError:
-        servings = 1.0
+    #multi = request.GET.get('servings', 1)
+    servings = 1.0
+    
+    if request.user.is_authenticated:
+        try:
+            app_user = AppUser.objects.get(user=request.user)
+            user_picks = UserPickedRecipes.objects.get(user=app_user)
+            
+            if user_picks.recipe:
+                # Split the string: "Apple Cinnamon Oatmeal:2.0, Other Recipe:1.0"
+                entries = [e for e in user_picks.recipe.rstrip("]").split("]") if e]
+                for entry in entries:
+                    if ":" in entry:
+                        name, serv = entry.split(":")
+                        if name == recipe.title:
+                            servings = float(serv)
+                            break
+        except (AppUser.DoesNotExist, UserPickedRecipes.DoesNotExist):
+            pass
     
     instructions = recipe.how_to_cook
     instruction_list = re.split(r'\d+\.\s', instructions.strip('"'))[1:]
@@ -993,6 +1058,7 @@ def recipe_info(request, recipe_id):
         ingredient = i.ingredient_id
         factor = float(i.amount or 0) * servings
 
+        # Adjusts measurements for given serving
         actual_amount = factor * float(ingredient.measurement_amount or 1) 
         ingredient_list.append(ingredient)
         amount_list.append(actual_amount)
@@ -1000,7 +1066,7 @@ def recipe_info(request, recipe_id):
     # multiply = float(request.GET.get('multi', 1))
     # qSetofingredients = Recipe_Ingredients.objects.filter(recipe_id=recipe.id).select_related('ingredient_id')
     # for i in qSetofingredients:
-        
+        # Calculates updated nutritional info to the updated serving size selected
         total_calories += (i.ingredient_id.calories_kcal or 0) * factor
         total_protein += (i.ingredient_id.protein_g or 0) * factor
         total_carbs += (i.ingredient_id.carbs_g or 0) * factor
