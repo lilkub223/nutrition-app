@@ -51,21 +51,33 @@
             {% if recipes_with_nutrition %}
             <div class="row">
                     {% for recipe, nutrition in recipes_with_nutrition %}
-                    <div class="col-md-4 mb-3">
+                    <div class="col-md-4 mb-3 recipe-card">
                         <div class="card h-100 shadow-sm">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ recipe.title }}</h5>
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title recipe-title">{{ recipe.title }}</h5>
+                                
+                                <div class="input-group input-group-sm mb-3">
+                                    <span class="input-group-text">Servings</span>
+                                    <input type="number" id="serv-input-{{ recipe.id }}"
+                                               name="servings" 
+                                               id="serv-input-{{ recipe.id }}"
+                                               value="{{ nutrition.adjusted_serving|default:1 }}"
+                                               class="form-control" min="1"
+                                               oninput="updateNutritionLive('{{ recipe.id }}', '{{ nutrition.calories }}', '{{ nutrition.protein }}', '{{ nutrition.carbs }}','{{ nutrition.fats }}', '{{ nutrition.fiber }}')">
+                                               
+                                </div>
+                               
                                 <p class="card-text">
                                     <label>Meal Type:</label> {{ recipe.meal_type|default:"Snack" }}<br>
-                                    <label>Calories:</label> {{ nutrition.calories }} kcal<br>
-                                    <label>Protein:</label> {{ nutrition.protein }} g <br>
-                                    <label>Carbs:</label> {{ nutrition.carbs }} g<br>
-                                    <label>Fiber:</label> {{ nutrition.fiber|default:"—" }}<br>
-                                    <label>Fats:</label> {{ nutrition.fats|default:"—" }}<br>
+                                    <label>Calories:</label> <span id="cal-{{ recipe.id }}">{{ nutrition.calories }}</span> kcal<br>
+                                    <label>Protein:</label> <span id="prot-{{ recipe.id }}">{{ nutrition.protein }}</span> g <br>
+                                    <label>Carbs:</label> <span id="carb-{{ recipe.id }}">{{ nutrition.carbs }}</span> g<br>
+                                    <label>Fiber:</label> <span id="fiber-{{ recipe.id }}">{{ nutrition.fiber }}</span> g<br>
+                                    <label>Fats:</label> <span id="fats-{{ recipe.id }}">{{ nutrition.fats }}</span> g<br>
 
                                 </p>
                                 <button class="btn btn-success mt-auto w-100"
-                                        onclick="addtoUserPickedRecipes('{{ recipe.title|escapejs }}')"> Add
+                                        onclick="addtoUserPickedRecipes('{{ recipe.title|escapejs }}', '{{ recipe.id }}')"> Add
                                 </button>
                             </div>
                         </div>
@@ -98,9 +110,22 @@
         }
         return cookieValue;
     }
+    function updateNutritionLive(recipeId, baseCal, baseProt, baseCarbs, baseFats, baseFiber) {
+        const input = document.getElementById('serv-input-' + recipeId);
+        const servings = parseFloat(input.value) || 1;
+
+        // Use parseFloat to ensure we aren't doing math on strings
+        document.getElementById('cal-' + recipeId).innerText = (parseFloat(baseCal) * servings).toFixed(1);
+        document.getElementById('prot-' + recipeId).innerText = (parseFloat(baseProt) * servings).toFixed(1);
+        document.getElementById('carb-' + recipeId).innerText = (parseFloat(baseCarbs) * servings).toFixed(1);
+        document.getElementById('fiber-' + recipeId).innerText = (parseFloat(baseFiber) * servings).toFixed(1);
+        document.getElementById('fats-' + recipeId).innerText = (parseFloat(baseFats) * servings).toFixed(1);
+    }
     // This function is called when user clicks "add" button
-    function addtoUserPickedRecipes(recipeTitle) {
+    function addtoUserPickedRecipes(recipeTitle, recipeId) {
         const csrftoken = getCookie('csrftoken');
+        const servingsInput = document.getElementById('serv-input-' + recipeId);
+        const adjustedServings = servingsInput ? servingsInput.value : 1;
         
         // Send POST request to Django backend
         fetch('/add_to_picked_recipes/', {
@@ -109,7 +134,7 @@
                 'Content-Type': 'application/json',  // We're sending JSON
                 'X-CSRFToken': csrftoken  // Django security token
             },
-            body: JSON.stringify({ recipe_title: recipeTitle })  // Convert to JSON string
+            body: JSON.stringify({ recipe_title: recipeTitle, servings: adjustedServings})  // Convert to JSON string
         })
         .then(response => response.json())  // Parse response JSON
         .then(data => {
