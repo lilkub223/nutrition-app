@@ -19,23 +19,15 @@
 <h1>Grocery List:</h1>
 
 {% if recipes %}
-    <div id="table-container">
-        <table id="ingredientsTable">
-            <thead>
-                <tr>
-                    <th>Ingredient</th>
-                    <th>Amount Needed</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for name, amount in ingredients.items %}
-                    <tr>
-                        <td id="ingredient">{{ name.title }}</td>
-                        <td id="recipe-amount">{{ amount }} {{ name.measurements }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="container my-4">
+        {% for name, amount in ingredients.items %}
+            <div class="card mb-2">
+                <div class="card-body">
+                    <h5 class="card-title">{{ name.title }}</h5>
+                    <p>{{ amount }} {{ name.measurements }}</p>
+                </div>
+            </div>
+        {% endfor %}
     </div>
 {% else %}
     <p>You haven't picked any recipes.</p>

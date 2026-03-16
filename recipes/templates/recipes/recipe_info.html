@@ -14,30 +14,56 @@
         <a href="{% url 'selected_recipes' %}" class="btn btn-success" >Back to selected recipes</a>
     </div>
 
-    <div>
-        <h3>Meal Type:</h3>
-        <p>{{ recipe.meal_type }}</p>
+    <div class="container my-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3>Meal Type:</h3>
+                <p>{{ recipe.meal_type }}</p>
+            </div>
+        </div>
 
 
-        <h3>Nutrient Info:</h3>
-        <p>(Info displayed is based on 1 serving)</p>
-        <ul>
-            {% for n,a in nutrition.items %}
-            <li>{{ n }} - {{ a }}</li>
-            {% endfor %}
-        </ul>
-        <h3>Ingredient List:</h3>
-        <ul>
-            {% for i,a in ingredients %}
-            <li>{{ a }}{{ i.measurements }} {{ i.title }}</li>
-            {% endfor %}
-        </ul>
-        <h3>Cooking Instructions:</h3>
-        <ol>
-            {% for step in instructions %}
-            <li>{{ step }}</li>
-            {% endfor %}
-        </ol>
+        <div class="row mb-4">
+            <div class="col-md-6 d-flex">
+                <div class="card flex-fill"> 
+                    <div class="card-body">
+                        <h3>Ingredient List:</h3>
+                        <ul>
+                        {% for i,a in ingredients %}
+                            <li>{{ a }}{{ i.measurements }} {{ i.title }}</li>
+                        {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 d-flex">
+                <div class="card flex-fill"> 
+                    <div class="card-body">
+
+                        <h3>Cooking Instructions:</h3>
+                        <ol>
+                        {% for step in instructions %}
+                            <li>{{ step }}</li>
+                        {% endfor %}
+                        </ol> 
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3>Nutrient Info:</h3>
+                <p>(Info displayed is based on 1 serving)</p>
+                <ul>
+                    {% for n,a in nutrition.items %}
+                    <li>{{ n }} - {{ a }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+        
     </div>
 </div>
 
