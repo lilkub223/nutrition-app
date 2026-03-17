@@ -11,8 +11,8 @@
 }
 .filters {
     display: flex;
-    justify-content: space-between; /* left & right sides */
-    align-items: center;           /* vertical align */
+    justify-content: space-between;
+    align-items: center;
     gap: 10px;
     margin-bottom: 10px;
 }
@@ -22,9 +22,7 @@
     align-items: center;
     gap: 10px; 
     padding: 5px 10px;
-
 }
-
 
 .quick-actions button {
     margin-left: 5px; 
@@ -41,49 +39,44 @@
             <p>Discover delicious and nutritious recipes</p>
     </div>
 
-
     <div id="filters" class="mb-4">
         <input type="text" id="searchInput" placeholder="Search recipes..." onkeyup="filterRecipes()" style="width: 100%; max-width: 600px; padding: 12px; font-size: 18px; border-radius: 8px; border: 1px solid #ccc;">
         <p id="recipe-count">Showing: {{ recipes|length }} recipes</p>
     </div>
 
-         <div id="table-container">
-            {% if recipes_with_nutrition %}
-            <div class="row">
-                    {% for recipe, nutrition in recipes_with_nutrition %}
-                    <div class="col-md-4 mb-3">
-                        <div class="card h-100 shadow-sm">
-                            <div class="card-body">
-                                <h5 class="card-title">{{ recipe.title }}</h5>
-                                <p class="card-text">
-                                    <label>Meal Type:</label> {{ recipe.meal_type|default:"Snack" }}<br>
-                                    <label>Calories:</label> {{ nutrition.calories }} kcal<br>
-                                    <label>Protein:</label> {{ nutrition.protein }} g <br>
-                                    <label>Carbs:</label> {{ nutrition.carbs }} g<br>
-                                    <label>Fiber:</label> {{ nutrition.fiber|default:"—" }}<br>
-                                    <label>Fats:</label> {{ nutrition.fats|default:"—" }}<br>
-
-                                </p>
-                                <button class="btn btn-success mt-auto w-100"
-                                        onclick="addtoUserPickedRecipes('{{ recipe.title|escapejs }}')"> Add
-                                </button>
-                            </div>
-                        </div>
+    <div id="table-container">
+        {% if recipes_with_nutrition %}
+        <div class="row">
+            {% for recipe, nutrition in recipes_with_nutrition %}
+            <div class="col-md-4 mb-3 recipe-card">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title recipe-title">{{ recipe.title }}</h5>
+                        <p class="card-text">
+                            <label>Meal Type:</label> {{ recipe.meal_type|default:"Snack" }}<br>
+                            <label>Calories:</label> {{ nutrition.calories }} kcal<br>
+                            <label>Protein:</label> {{ nutrition.protein }} g <br>
+                            <label>Carbs:</label> {{ nutrition.carbs }} g<br>
+                            <label>Fiber:</label> {{ nutrition.fiber|default:"—" }}<br>
+                            <label>Fats:</label> {{ nutrition.fats|default:"—" }}<br>
+                        </p>
+                        <button class="btn btn-success mt-auto w-100"
+                                onclick="addtoUserPickedRecipes('{{ recipe.title|escapejs }}')"> Add
+                        </button>
                     </div>
-                    {% endfor %}
                 </div>
-                {% else %}
-                <div id="no-results">
-                    <h2>No Recipes Found</h2>
-                    <p>Try creating your own</p>
-                </div>
-                {% endif %}
             </div>
+            {% endfor %}
         </div>
+        {% else %}
+        <div id="no-results">
+            <h2>No Recipes Found</h2>
+            <p>Try creating your own</p>
+        </div>
+        {% endif %}
     </div>
+</div>
 <script>
-    // Helper function to get CSRF token from cookies
-    // Django stores CSRF token in a cookie that we need to read
     function getCookie(name) {
         let cookieValue = null;
         if (document.cookie && document.cookie !== '') {
@@ -98,22 +91,19 @@
         }
         return cookieValue;
     }
-    // This function is called when user clicks "add" button
+
     function addtoUserPickedRecipes(recipeTitle) {
         const csrftoken = getCookie('csrftoken');
-        
-        // Send POST request to Django backend
         fetch('/add_to_picked_recipes/', {
-            method: 'POST',  // POST because we're modifying data
+            method: 'POST',
             headers: {
-                'Content-Type': 'application/json',  // We're sending JSON
-                'X-CSRFToken': csrftoken  // Django security token
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrftoken
             },
-            body: JSON.stringify({ recipe_title: recipeTitle })  // Convert to JSON string
+            body: JSON.stringify({ recipe_title: recipeTitle })
         })
-        .then(response => response.json())  // Parse response JSON
+        .then(response => response.json())
         .then(data => {
-            // Show user-friendly message based on success/error
             if (data.success) {
                 alert('Recipe added to your picked recipes!');
             } else {
@@ -121,32 +111,30 @@
             }
         })
         .catch(error => {
-            // Handle network errors
             console.error('Error:', error);
             alert('An unexpected error occurred.');
         });
     }
 
     function filterRecipes() {
-        const searchInput = document.getElementById('searchInput').value.toLowerCase();
-        const cards = document.getElementsByClassName('recipe-card');
+        const searchInput = document.getElementById('searchInput').value.toLowerCase().trim();
+        const allCards = document.querySelectorAll('.recipe-card');
         let visibleCount = 0;
 
-        for (let i = 0; i < cards.length; i++) {
-            const card = cards[i];
-            const title = card.querySelector('.recipe-title').textContent.toLowerCase();
-            if(title.includes(searchInput)){
-                card.style.display = "";
-                visibleCount ++;
-            }else{
-                card.style.display = "none";
-            }
-        }
-        const countD = document.getElementById('recipe-count');
-
-        if(countD){
-            countD.textContent = "Showing: " + visibleCount + " recipes";
-        }
+            allCards.forEach(card => {
+            const titleElement = card.querySelector('.recipe-title');
+            if (!titleElement) return
+            const title = titleElement.textContent.toLowerCase().trim();
+            const matches = title.includes(searchInput);
+            
+           if (matches) {
+                visibleCount++;
+                card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+        });
+        document.getElementById('recipe-count').textContent = "Showing: " + visibleCount + " recipes";
     }
 </script>
-{% endblock %}
+{% endblock %}  
