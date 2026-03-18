@@ -681,7 +681,7 @@ def weekly_digest(request):
     # Get most common ingredient
     most_common_ingredient = max(ingredient_count, key=ingredient_count.get) if ingredient_count else None
 
-    sevenDaysAgo = date.today() - timedelta(days=7)
+    sevenDaysAgo = date.today() - timedelta(days=6)
     results = DailyLog.objects.all().filter(user=request.user)
     results = results.filter(date__gte=sevenDaysAgo)
     sevenDaysAgoLst = [date.today() - timedelta(days=i) for i in range(7)]
@@ -701,7 +701,9 @@ def weekly_digest(request):
     myWorkouts= WorkoutEntry.objects.filter(daily_log__in=results)
     mydict = {str(date): 0 for date in sevenDaysAgoLst}
     for w in myWorkouts:
-        mydict[str(w.daily_log.date)] += 1
+        date_str = str(w.daily_log.date)
+        if date_str in mydict:
+            mydict[date_str] += 1
 
 
     workouts_json = json.dumps({str(k): v for k, v in mydict.items()})
