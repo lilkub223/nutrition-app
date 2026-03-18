@@ -22,6 +22,25 @@
             </div>
         </div>
 
+        <h3>Nutrient Info:</h3>
+        <p>( Info displayed is based on {{ multi }} serving(s) )</p>
+        <ul>
+            {% for n,a in nutrition.items %}
+            <li>{{ n }} - {{ a }}</li>
+            {% endfor %}
+        </ul>
+        <h3>Ingredient List:</h3>
+        <ul>
+            {% for i,a in ingredients %}
+            <li>{{ a }}{{ i.measurements }} {{ i.title }}</li>
+            {% endfor %}
+        </ul>
+        <h3>Cooking Instructions:</h3>
+        <ol>
+            {% for step in instructions %}
+            <li>{{ step }}</li>
+            {% endfor %}
+        </ol>
 
         <div class="row mb-4">
             <div class="col-md-6 d-flex">
@@ -50,21 +69,6 @@
                 </div>
             </div>
         </div>
-
-
-        <div class="card mb-4">
-            <div class="card-body">
-                <h3>Nutrient Info:</h3>
-                <p>(Info displayed is based on 1 serving)</p>
-                <ul>
-                    {% for n,a in nutrition.items %}
-                    <li>{{ n }} - {{ a }}</li>
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-        
     </div>
 </div>
-
 {% endblock %}
