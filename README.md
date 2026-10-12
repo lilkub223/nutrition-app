@@ -1,4 +1,71 @@
-# CSC394 Final Project Nutrition App
+# Nutrition App | CSC 394 Team Project
+
+A nutrition planning application built with Django, PostgreSQL, and Docker for
+DePaul University's CSC 394 course. Features include recipe browsing, dietary
+restrictions, disease-related food information, nutrition and weight goals,
+meal and workout logs, grocery lists, and daily and weekly summaries.
+
+## Project Origin and Team Credit
+
+This is Kaamil Khan's public portfolio copy of a collaborative class project,
+published with the team's permission. The application was developed by the team;
+this repository does not represent solo authorship.
+
+Original repository: [DePaul-CSC-394-801-2026/nutrition-app-team-3](https://github.com/DePaul-CSC-394-801-2026/nutrition-app-team-3)
+(private; access is required).
+
+Contributors, based on the original repository's commit history:
+
+- [rspocins](https://github.com/rspocins)
+- [Rheema Ayyash](https://github.com/rheema-ayyash)
+- [Kaamil Khan](https://github.com/lilkub223)
+- [Riley Oleson](https://github.com/roleson31)
+- [dhrutikamin](https://github.com/dhrutikamin)
+- [Mikolaj Kubowicz](https://github.com/MikolajKubowicz)
+
+The original main branch's commit authors, messages, and contribution history are
+retained. Before publication, embedded credentials, cached Python bytecode, and
+a historical local database were removed from this copy's history. As a result,
+commit IDs differ from those in the original repository.
+
+## My Contributions: Kaamil Khan
+
+Based on the original commits, my work included:
+
+- Building the goals page with nutrition targets, weight tracking, and custom goals.
+- Improving goal completion behavior, weight goal saving, and multiple-disease selection.
+- Updating the database schema, models, migrations, and CSV import commands.
+- Adding dietary restriction and quote data, models, and import support.
+- Expanding disease and food datasets and correcting ingredient references and CSV headers.
+
+## Local Development
+
+This repository contains a class project and local development configuration.
+It is not a production deployment or a source of medical advice.
+
+With Docker and Docker Compose installed:
+
+```sh
+docker compose up --build -d
+docker compose exec web python manage.py migrate
+```
+
+Once PostgreSQL is ready and migrations complete, open http://localhost:8000.
+The commands below import the project's sample datasets.
+
+Email uses Django's console backend by default. SMTP credentials must be supplied
+through environment variables when explicitly enabling SMTP. A development
+secret key is generated at startup unless `DJANGO_SECRET_KEY` is set; set a
+stable private value in the application environment for persistent sessions.
+Never reuse credentials from the original private repository.
+
+No new software license is granted by this portfolio copy. The original
+repository did not include a license; contributor and third-party rights remain
+with their respective holders.
+
+## Original Development Notes
+
+The team's original import commands and sample-data notes are retained below.
 
 command to import recepies
 docker-compose exec web python manage.py import_recipes "data/raw/recipes.csv"
