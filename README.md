@@ -1,183 +1,116 @@
-# Nutrition App | CSC 394 Team Project
+# Nutrition App
 
-A nutrition planning application built with Django, PostgreSQL, and Docker for
-DePaul University's CSC 394 course. Features include recipe browsing, dietary
-restrictions, disease-related food information, nutrition and weight goals,
-meal and workout logs, grocery lists, and daily and weekly summaries.
+A nutrition planning web app for people managing chronic diseases. Users can explore recipes, identify foods associated with their conditions, and track meals, nutrition targets, and weight goals in one place.
 
-## Project Origin and Team Credit
+Built with Django and PostgreSQL as a team project for DePaul University's CSC 394 course.
 
-This is Kaamil Khan's public portfolio copy of a collaborative class project,
-published with the team's permission. The application was developed by the team;
-this repository does not represent solo authorship.
+## Features
 
-Original repository: [DePaul-CSC-394-801-2026/nutrition-app-team-3](https://github.com/DePaul-CSC-394-801-2026/nutrition-app-team-3)
-(private; access is required).
+- **Disease-based nutrition:** Select health conditions, explore related food information, and view nutrition target ranges based on selected diseases.
+- **Recipe discovery:** Browse and search recipes, adjust serving sizes, and save meals with ingredient and nutrition details.
+- **Personal profiles:** Manage dietary restrictions, selected conditions, and weight information.
+- **Goals and progress:** Set calorie and macronutrient targets, track weight, and manage custom goals.
+- **Daily and weekly summaries:** Log meals and workouts and review nutrition totals over time.
+- **Grocery lists:** Build a grocery list from saved recipes.
 
-Contributors, based on the original repository's commit history:
+## Tech Stack
 
-- [rspocins](https://github.com/rspocins)
-- [Rheema Ayyash](https://github.com/rheema-ayyash)
-- [Kaamil Khan](https://github.com/lilkub223)
-- [Riley Oleson](https://github.com/roleson31)
-- [dhrutikamin](https://github.com/dhrutikamin)
-- [Mikolaj Kubowicz](https://github.com/MikolajKubowicz)
+| Layer | Technologies |
+| --- | --- |
+| Backend | Python, Django |
+| Frontend | Django templates, HTML, CSS, JavaScript |
+| Database | PostgreSQL |
+| Development | Docker, Docker Compose |
+| Data loading | CSV datasets and Django management commands |
 
-The original main branch's commit authors, messages, and contribution history are
-retained. Before publication, embedded credentials, cached Python bytecode, and
-a historical local database were removed from this copy's history. As a result,
-commit IDs differ from those in the original repository.
+## Getting Started
 
-## My Contributions: Kaamil Khan
+### Prerequisites
 
-Based on the original commits, my work included:
+- Git
+- Docker with Docker Compose
+- Available ports `8000`, `5432`, `9200`, and `9300`
 
-- Building the goals page with nutrition targets, weight tracking, and custom goals.
-- Improving goal completion behavior, weight goal saving, and multiple-disease selection.
-- Updating the database schema, models, migrations, and CSV import commands.
-- Adding dietary restriction and quote data, models, and import support.
-- Expanding disease and food datasets and correcting ingredient references and CSV headers.
+### 1. Clone the repository
 
-## Local Development
+```sh
+git clone https://github.com/lilkub223/nutrition-app.git
+cd nutrition-app
+```
 
-This repository contains a class project and local development configuration.
-It is not a production deployment or a source of medical advice.
-
-With Docker and Docker Compose installed:
+### 2. Start the application
 
 ```sh
 docker compose up --build -d
+```
+
+The Compose stack includes the Django app, PostgreSQL, and an Elasticsearch service. Wait for PostgreSQL to be ready before running migrations. You can check its status with `docker compose logs db`.
+
+```sh
 docker compose exec web python manage.py migrate
 ```
 
-Once PostgreSQL is ready and migrations complete, open http://localhost:8000.
-The commands below import the project's sample datasets.
+### 3. Load the datasets
 
-Email uses Django's console backend by default. SMTP credentials must be supplied
-through environment variables when explicitly enabling SMTP. A development
-secret key is generated at startup unless `DJANGO_SECRET_KEY` is set; set a
-stable private value in the application environment for persistent sessions.
-Never reuse credentials from the original private repository.
+Run these commands in order so recipes, ingredients, diseases, and dietary restrictions exist before their relationships are imported:
 
-No new software license is granted by this portfolio copy. The original
-repository did not include a license; contributor and third-party rights remain
-with their respective holders.
+```sh
+docker compose exec web python manage.py import_recipes data/raw/recipes.csv
+docker compose exec web python manage.py import_ingredients data/raw/ingredients.csv
+docker compose exec web python manage.py import_diseases data/raw/diseases.csv
+docker compose exec web python manage.py import_dietary_restrictions
+docker compose exec web python manage.py import_recipe_ingredients data/raw/recipe_ingredients.csv
+docker compose exec web python manage.py import_disease_avoid_food data/raw/disease_avoid_food.csv
+docker compose exec web python manage.py import_disease_super_food data/raw/disease_super_food.csv
+docker compose exec web python manage.py import_dietary_restriction_ingredients
+docker compose exec web python manage.py import_dietary_restriction_recipes
+docker compose exec web python manage.py import_quotes
+```
 
-## Original Development Notes
+### 4. Open the app
 
-The team's original import commands and sample-data notes are retained below.
+Visit [localhost:8000](http://localhost:8000), create an account, and set up your profile to start exploring recipes and tracking goals.
 
-command to import recepies
-docker-compose exec web python manage.py import_recipes "data/raw/recipes.csv"
+To stop the application while keeping the database volume:
 
-to import dieseases
-docker-compose exec web python manage.py import_diseases "data/raw/diseases.csv"
+```sh
+docker compose down
+```
 
-import ingredients 
-docker-compose exec web python manage.py import_ingredients "data/raw/ingredients.csv"
+### Configuration
 
-import avoid foods
-docker-compose exec web python manage.py import_disease_avoid_food "data/raw/disease_avoid_food.csv"
+For a consistent local secret key across restarts, set `DJANGO_SECRET_KEY` in a root `.env` file before starting the app. Otherwise, a temporary key is generated at startup.
 
-import super foods
-docker-compose exec web python manage.py import_disease_super_food "data/raw/disease_super_food.csv"
+Email messages print to the application logs by default. To enable the configured Gmail SMTP service, set `EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend`, `EMAIL_HOST_USER`, and `EMAIL_HOST_PASSWORD` in `.env`.
 
-import recipe ingredients table
-docker-compose exec web python manage.py import_recipe_ingredients "data/raw/recipe_ingredients.csv"
+## Project Structure
 
+```text
+nutrition_project/           Django settings and URL routing
+recipes/                     Models, views, migrations, and app templates
+recipes/management/commands/ CSV import commands
+main/                        Shared templates, styles, and images
+data/raw/                    Recipe, ingredient, disease, and dietary datasets
+docker-compose.yml           Local services and configuration
+```
 
-docker-compose exec web python manage.py import_recipes "data/raw/recipes.csv"
-docker-compose exec web python manage.py import_diseases "data/raw/diseases.csv"
-docker-compose exec web python manage.py import_ingredients "data/raw/ingredients.csv"
-docker-compose exec web python manage.py import_recipe_ingredients "data/raw/recipe_ingredients.csv"
-docker-compose exec web python manage.py import_disease_avoid_food "data/raw/disease_avoid_food.csv"
-docker-compose exec web python manage.py import_disease_super_food "data/raw/disease_super_food.csv"
+## My Contributions
 
-from django.contrib.auth.models import User
-from recipes.models import DailyLog, MealEntry, WorkoutEntry
-from datetime import date, timedelta
-import random
+**Kaamil Khan**
 
-user = User.objects.first()  # change this to target a specific user
+- Built the goals page with nutrition targets, weight tracking, and custom goals.
+- Added support for multiple selected diseases and improved goal completion and weight tracking behavior.
+- Updated database models, migrations, and CSV import commands for the nutrition schema.
+- Added dietary restriction and quote models, datasets, and import support.
+- Expanded disease and food datasets and fixed CSV headers and ingredient references.
 
-for i in range(7):
-    log_date = date.today() - timedelta(days=i)
-    calories = round(random.uniform(1500, 2500), 1)
-    protein = round(random.uniform(50, 150), 1)
-    carbs = round(random.uniform(150, 350), 1)
-    fats = round(random.uniform(40, 100), 1)
-    burned = round(random.uniform(0, 500), 1)
-    log, created = DailyLog.objects.get_or_create(
-        user=user,
-        date=log_date,
-        defaults={
-            'total_calories': calories,
-            'total_protein': protein,
-            'total_carbs': carbs,
-            'total_fats': fats,
-            'total_burned': burned,
-            'calorie_goal': 2000,
-        }
-    )
-    if created:
-        MealEntry.objects.create(
-            daily_log=log,
-            meal_name=f'Sample Meal',
-            calories=calories,
-            protein=protein,
-            carbs=carbs,
-            fats=fats,
-        )
-        WorkoutEntry.objects.create(
-            daily_log=log,
-            workout_type=random.choice(['cardio', 'strength', 'walking', 'running']),
-            calories_burned=burned,
-        )
-        print(f'Created log for {log_date}')
-    else:
-        print(f'Log already exists for {log_date}, skipping.')
+## Team
 
+- [Kaamil Khan](https://github.com/lilkub223)
+- [Rheema Ayyash](https://github.com/rheema-ayyash)
+- [Riley Oleson](https://github.com/roleson31)
+- [Mikolaj Kubowicz](https://github.com/MikolajKubowicz)
+- [rspocins](https://github.com/rspocins)
+- [dhrutikamin](https://github.com/dhrutikamin)
 
-from django.contrib.auth.models import User
-from recipes.models import DailyLog, MealEntry, WorkoutEntry
-from datetime import date, timedelta
-import random
-user = User.objects.first()  # change to target a specific user
-workout_counts = random.sample(range(1, 11), 7)
-for i in range(7):
-    log_date = date.today() - timedelta(days=i)
-    calories = round(random.uniform(1500, 2500), 1)
-    protein = round(random.uniform(50, 150), 1)
-    carbs = round(random.uniform(150, 350), 1)
-    fats = round(random.uniform(40, 100), 1)
-    burned = round(random.uniform(0, 500), 1)
-    log, created = DailyLog.objects.update_or_create(
-        user=user,
-        date=log_date,
-        defaults={
-            'total_calories': calories,
-            'total_protein': protein,
-            'total_carbs': carbs,
-            'total_fats': fats,
-            'total_burned': burned,
-            'calorie_goal': 2000,
-        }
-    )
-    MealEntry.objects.filter(daily_log=log).delete()
-    WorkoutEntry.objects.filter(daily_log=log).delete()
-    MealEntry.objects.create(
-        daily_log=log,
-        meal_name=f'Sample Meal',
-        calories=calories,
-        protein=protein,
-        carbs=carbs,
-        fats=fats,
-    )
-    num_workouts = workout_counts[i]
-    for _ in range(num_workouts):
-        WorkoutEntry.objects.create(
-            daily_log=log,
-            workout_type=random.choice(['cardio', 'strength', 'walking', 'running']),
-            calories_burned=round(random.uniform(100, 500), 1),
-        )
-    print(f'{"Created" if created else "Updated"} log for {log_date} with {num_workouts} workouts')
+Developed for CSC 394 at DePaul University. [Original team repository](https://github.com/DePaul-CSC-394-801-2026/nutrition-app-team-3).
